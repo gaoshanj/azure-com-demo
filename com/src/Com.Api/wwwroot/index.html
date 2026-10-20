@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COM · 合同订单管理系统</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<!-- 登录 -->
+<div id="login" class="login-wrap">
+  <div class="login-card">
+    <div class="login-head">
+      <div class="logo-dot"></div>
+      <div>
+        <div class="lh-t">COM 合同订单管理系统</div>
+        <div class="lh-s">Azure 实战培训 · 演示环境</div>
+      </div>
+    </div>
+    <form id="login-form" class="login-form">
+      <label>账号</label>
+      <select id="login-upn"></select>
+      <label>密码</label>
+      <input id="login-pwd" type="password" value="Com@2026" autocomplete="current-password">
+      <button type="submit" class="btn primary">登录</button>
+      <div id="login-err" class="login-err"></div>
+    </form>
+    <div class="login-foot">演示账号统一密码 <code>Com@2026</code></div>
+  </div>
+</div>
+
+<!-- 主体 -->
+<div id="app" class="shell hidden">
+  <aside>
+    <div class="brand">
+      <div class="logo-dot"></div>
+      <div><div class="brand-t">COM</div><div class="brand-s">合同订单管理</div></div>
+    </div>
+    <nav>
+      <a href="#/" data-nav="dash"><span class="i">◧</span>工作台</a>
+      <a href="#/orders" data-nav="orders"><span class="i">☰</span>订单与合同</a>
+      <a href="#/approvals" data-nav="approvals"><span class="i">✓</span>审批中心<span id="nav-badge" class="badge hidden">0</span></a>
+      <a href="#/intake" data-nav="intake"><span class="i">⌁</span>智能录入</a>
+      <a href="#/ops" data-nav="ops"><span class="i">◎</span>运维看板</a>
+    </nav>
+    <div class="side-foot">
+      <div class="sf-row"><span>环境</span><b id="sf-env">—</b></div>
+      <div class="sf-row"><span>区域</span><b id="sf-region">—</b></div>
+      <div class="sf-row"><span>版本</span><b id="sf-ver">—</b></div>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="crumb" id="crumb">工作台</div>
+      <div class="top-right">
+        <div class="notif" id="notif-btn">✉<span id="notif-dot" class="dot hidden"></span></div>
+        <div class="user-chip" id="user-chip">
+          <div class="avatar" id="user-av">—</div>
+          <div class="uc-txt"><div id="user-name">—</div><div id="user-role">—</div></div>
+        </div>
+        <button class="btn ghost sm" id="switch-user">切换账号</button>
+      </div>
+    </header>
+    <main id="view"></main>
+  </div>
+</div>
+
+<!-- 通知抽屉 -->
+<div id="notif-panel" class="drawer hidden">
+  <div class="drawer-h"><b>通知</b><button class="btn ghost sm" id="notif-close">关闭</button></div>
+  <div id="notif-list" class="drawer-body"></div>
+</div>
+
+<!-- 订单详情抽屉 -->
+<div id="panel" class="drawer wide hidden">
+  <div class="drawer-h"><b id="panel-title">订单</b><button class="btn ghost sm" id="panel-close">关闭</button></div>
+  <div id="panel-body" class="drawer-body"></div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

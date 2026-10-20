@@ -1,0 +1,202 @@
+### ─────────────────────────────────────────────────────────────
+### COM 合同订单管理系统 · 课堂演示请求集
+###
+### 用法（VS Code + REST Client 扩展 / Visual Studio / Rider 均可）：
+###   1. 先执行 ▼ 里的「登录」，token 会自动写入变量
+###   2. 之后每条请求按顺序点 "Send Request"
+###   3. 变量取自 .vscode/settings 或下方 @ 声明，换成自己的环境即可
+###
+### 现场演示建议顺序：
+###   建单 → 提交（看状态机 409）→ 三级审批 → 生成合同 → 校验摘要 → 下载
+### ─────────────────────────────────────────────────────────────
+
+@host = https://app-com-poc-api-ilvufq.azurewebsites.net
+@password = Com@2026
+@internalKey = 从 infra/.secrets.env 的 INTERNAL_KEY 取值
+@orderId = 00000000-0000-0000-0000-000000000000
+@contractId = 00000000-0000-0000-0000-000000000000
+@taskId = 00000000-0000-0000-0000-000000000000
+
+
+### 0. 健康检查（不需要认证，用来证明"应用活着"和"数据库通"两件事是分开的）
+GET {{host}}/healthz
+
+###
+GET {{host}}/readyz
+
+
+### 1. 登录 · 销售 张伟
+# @name loginSales
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "upn": "sales@com.demo", "password": "{{password}}" }
+
+###
+@salesToken = {{loginSales.response.body.token}}
+
+
+### 2. 依赖探针（课堂上讲"可观测性"时点这个，六格全绿比讲十页 PPT 有用）
+GET {{host}}/api/ops/deps
+Authorization: Bearer {{salesToken}}
+
+
+### 3. 运行模式（证明"同一个镜像，靠配置切云/本地"）
+GET {{host}}/api/ops/summary
+Authorization: Bearer {{salesToken}}
+
+
+### 4. 主数据
+GET {{host}}/api/customers
+Authorization: Bearer {{salesToken}}
+
+###
+GET {{host}}/api/products
+Authorization: Bearer {{salesToken}}
+
+
+### 5. 建单 · 金额落在「2 级审批」档（¥500,000 – ¥2,000,000）
+# IdempotencyKey 相同则只建一次 —— 演示"网络重试不会重复下单"
+# @name createOrder
+POST {{host}}/api/orders
+Authorization: Bearer {{salesToken}}
+Content-Type: application/json
+
+{
+  "customerId": "00000000-0000-0000-0000-000000000000",
+  "terms": "月结 30 天",
+  "remark": "课堂演示订单",
+  "lines": [
+    { "productId": "00000000-0000-0000-0000-000000000000", "qty": 5, "unitPrice": 320000 },
+    { "productId": "00000000-0000-0000-0000-000000000000", "qty": 2, "unitPrice": 45000 }
+  ],
+  "idempotencyKey": "demo-2026-001"
+}
+
+###
+@orderId = {{createOrder.response.body.id}}
+
+
+### 6. 订单详情（审批链 1..N 会按金额算出来，CanSubmit / CanApprove 由服务端判定）
+GET {{host}}/api/orders/{{orderId}}
+Authorization: Bearer {{salesToken}}
+
+
+### 7. 非法流转演示 · 草稿状态直接"批准" → 409
+# 这条故意打错，用来说明"状态机只有一个入口，非法流转在服务端就被拦住"
+POST {{host}}/api/approvals/{{taskId}}/decision
+Authorization: Bearer {{salesToken}}
+Content-Type: application/json
+
+{ "decision": "approve", "comment": "非法流转" }
+
+
+### 8. 提交审批 → PendingApproval
+# Logic Apps 会被触发：Notify → HttpWebhook 挂起（timeout PT48H）
+POST {{host}}/api/orders/{{orderId}}/submit
+Authorization: Bearer {{salesToken}}
+
+
+### 9. 重复提交 → 409（幂等 + 状态机）
+POST {{host}}/api/orders/{{orderId}}/submit
+Authorization: Bearer {{salesToken}}
+
+
+### 10. L1 · 销售总监 李强 的待办
+# @name loginDirector
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "upn": "director@com.demo", "password": "{{password}}" }
+
+###
+@directorToken = {{loginDirector.response.body.token}}
+
+# @name pendingDirector
+GET {{host}}/api/approvals/pending
+Authorization: Bearer {{directorToken}}
+
+###
+@taskId = {{pendingDirector.response.body.0.taskId}}
+
+
+### 11. L1 批准 → 响应 workflow=resumed 表示"是 Logic Apps 回调推进的"
+POST {{host}}/api/approvals/{{taskId}}/decision
+Authorization: Bearer {{directorToken}}
+Content-Type: application/json
+
+{ "decision": "approve", "comment": "价格与交期符合框架协议，同意" }
+
+
+### 12. L2 · 财务 王敏
+# @name loginFinance
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "upn": "finance@com.demo", "password": "{{password}}" }
+
+###
+@financeToken = {{loginFinance.response.body.token}}
+
+# @name pendingFinance
+GET {{host}}/api/approvals/pending
+Authorization: Bearer {{financeToken}}
+
+###
+POST {{host}}/api/approvals/{{pendingFinance.response.body.0.taskId}}/decision
+Authorization: Bearer {{financeToken}}
+Content-Type: application/json
+
+{ "decision": "approve", "comment": "客户信用额度充足，账期可接受" }
+
+
+### 13. 订单应变为 Approved
+GET {{host}}/api/orders/{{orderId}}
+Authorization: Bearer {{salesToken}}
+
+
+### 14. 生成合同 → 202，任务进 Service Bus，由 Function 异步渲染
+# @name genContract
+POST {{host}}/api/contracts/{{orderId}}/generate
+Authorization: Bearer {{salesToken}}
+
+
+### 15. 轮询到 Archived（几秒内；PDF 在 Blob 的 WORM 容器里）
+GET {{host}}/api/orders/{{orderId}}
+Authorization: Bearer {{salesToken}}
+
+###
+@contractId = {{genContract.response.body.contractId}}
+
+
+### 16. 重算摘要 —— 证明"存储里的字节没被改过"
+GET {{host}}/api/contracts/{{contractId}}/verify
+Authorization: Bearer {{salesToken}}
+
+
+### 17. 下载 PDF（中文标题「购销合同」不会出现方框，因为字体是内嵌的）
+GET {{host}}/api/contracts/{{contractId}}/download
+Authorization: Bearer {{salesToken}}
+
+
+### 18. 审计时间线（SQL 是主，Cosmos 是镜像，两份都可查）
+GET {{host}}/api/orders/{{orderId}}/timeline
+Authorization: Bearer {{salesToken}}
+
+
+### 19. 越权演示 · 未认证
+GET {{host}}/api/orders
+
+### 20. 越权演示 · 内部端点没有密钥
+POST {{host}}/internal/notify
+Content-Type: application/json
+
+{ "taskId": "{{taskId}}", "orderId": "{{orderId}}", "level": 1, "approverUpn": "x", "amount": 1 }
+
+
+### 21. 内部端点带正确密钥（可选，演示共享密钥 vs 托管标识的差别）
+POST {{host}}/internal/notify
+x-internal-key: {{internalKey}}
+Content-Type: application/json
+
+{ "taskId": "{{taskId}}", "orderId": "{{orderId}}", "level": 1, "approverUpn": "director@com.demo", "amount": 1865600 }

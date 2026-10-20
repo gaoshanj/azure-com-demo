@@ -1,0 +1,19 @@
+# 统一换行符，避免 Windows 下提交的 CRLF 脚本在 macOS/Linux 上无法运行
+* text=auto eol=lf
+
+# 脚本必须 LF，否则克隆后报 /bin/bash^M: bad interpreter
+*.sh   text eol=lf
+*.py   text eol=lf
+*.bicep text eol=lf
+*.http text eol=lf
+*.cs   text eol=lf
+*.csproj text eol=lf
+*.json text eol=lf
+*.sln  text eol=lf
+
+# 二进制资源不做换行转换
+*.otf binary
+*.png binary
+*.pdf binary
+*.zip binary
+*.dll binary

@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>合同订单管理系统（COM）· Azure 目标架构设计 v1.0</title>
+<style>
+  :root{
+    --bg:#0B0C0E; --bg-2:#0E1013;
+    --panel:#121418; --panel-2:#16181D; --panel-3:#1B1E24;
+    --line:#23262C; --line-2:#2E3238;
+    --text:#E8E9EC; --text-2:#C3C6CC; --muted:#8D919B; --muted-2:#6C7079;
+    --accent:#6E8BFF; --accent-dim:#243056;
+    --green:#48D1A0; --green-dim:#12332A;
+    --amber:#F5A524; --amber-dim:#382A10;
+    --red:#FF6B6B; --red-dim:#3A1A1A;
+    --purple:#A78BFA; --cyan:#4DD0E1;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    font-size:14.5px; line-height:1.75; letter-spacing:.01em;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:#2B3A6B;color:#fff}
+
+  /* ---------- layout ---------- */
+  .shell{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:100vh}
+  aside{
+    position:sticky;top:0;height:100vh;overflow-y:auto;
+    border-right:1px solid var(--line);background:var(--bg-2);
+    padding:26px 18px 40px;
+  }
+  aside::-webkit-scrollbar{width:6px}
+  aside::-webkit-scrollbar-thumb{background:#2A2E35;border-radius:3px}
+  .brand{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+  .brand-dot{width:9px;height:9px;border-radius:2px;background:var(--accent);box-shadow:0 0 12px rgba(110,139,255,.7)}
+  .brand-txt{font-size:12.5px;font-weight:600;letter-spacing:.06em;color:var(--text-2)}
+  .brand-sub{font-size:11px;color:var(--muted-2);margin:2px 0 22px;letter-spacing:.04em}
+  nav a{
+    display:block;font-size:12.8px;color:var(--muted);text-decoration:none;
+    padding:5px 9px;border-radius:6px;border-left:2px solid transparent;
+    transition:.15s;
+  }
+  nav a:hover{color:var(--text);background:var(--panel-2)}
+  nav a .n{font-family:var(--mono);font-size:10.5px;color:var(--muted-2);margin-right:7px}
+  nav a.active{color:var(--text);background:var(--panel-2);border-left-color:var(--accent)}
+  nav a.active .n{color:var(--accent)}
+  .nav-group{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#4E535C;margin:16px 0 6px 10px}
+  main{padding:44px 56px 120px;max-width:1080px}
+
+  /* ---------- header ---------- */
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--accent);text-transform:uppercase}
+  h1{font-size:34px;line-height:1.28;font-weight:650;letter-spacing:-.02em;margin:14px 0 10px}
+  h1 span{color:var(--muted-2)}
+  .lede{font-size:15.5px;color:var(--text-2);max-width:760px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 4px}
+  .chip{
+    font-family:var(--mono);font-size:11px;color:var(--text-2);
+    background:var(--panel);border:1px solid var(--line);border-radius:999px;
+    padding:4px 11px;display:inline-flex;align-items:center;gap:6px;
+  }
+  .chip b{color:var(--text);font-weight:600}
+  .chip .dot{width:5px;height:5px;border-radius:50%;background:var(--green)}
+  hr.sep{border:0;border-top:1px solid var(--line);margin:34px 0}
+
+  /* ---------- sections ---------- */
+  section{margin:0 0 54px;scroll-margin-top:24px}
+  h2{
+    font-size:21px;font-weight:600;letter-spacing:-.01em;
+    padding-bottom:11px;border-bottom:1px solid var(--line);margin-bottom:20px;
+    display:flex;align-items:baseline;gap:12px;
+  }
+  h2 .num{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:500;letter-spacing:.06em}
+  h3{font-size:15.5px;font-weight:600;margin:26px 0 10px;color:var(--text)}
+  h4{font-size:13px;font-weight:600;margin:18px 0 8px;color:var(--text-2);letter-spacing:.02em}
+  p{margin:0 0 12px;color:var(--text-2)}
+  p.tight{margin-bottom:6px}
+  ul,ol{margin:0 0 14px 20px;color:var(--text-2)}
+  li{margin:4px 0}
+  li::marker{color:var(--muted-2)}
+  strong{color:var(--text);font-weight:600}
+  code{
+    font-family:var(--mono);font-size:12.2px;background:var(--panel-3);
+    border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:#C9D3FF;
+  }
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ---------- tables ---------- */
+  .tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);margin:14px 0 18px;background:var(--panel)}
+  table{border-collapse:collapse;width:100%;font-size:12.9px}
+  th{
+    text-align:left;font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);background:var(--panel-2);padding:10px 12px;
+    border-bottom:1px solid var(--line-2);white-space:nowrap;
+  }
+  td{padding:9px 12px;border-bottom:1px solid var(--line);color:var(--text-2);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:#14171C}
+  td code{font-size:11.6px;white-space:nowrap}
+  .num-td{font-family:var(--mono);font-size:11.8px;color:var(--text);white-space:nowrap}
+  .t-sub{display:block;font-size:11px;color:var(--muted-2);margin-top:2px}
+
+  /* ---------- tags ---------- */
+  .tag{
+    display:inline-block;font-family:var(--mono);font-size:10.5px;padding:1px 7px;border-radius:4px;
+    border:1px solid var(--line-2);color:var(--muted);background:var(--panel-3);white-space:nowrap;
+  }
+  .tag.g{color:var(--green);border-color:#1D4A3C;background:var(--green-dim)}
+  .tag.a{color:var(--amber);border-color:#4A3A15;background:var(--amber-dim)}
+  .tag.r{color:var(--red);border-color:#4A2323;background:var(--red-dim)}
+  .tag.b{color:var(--accent);border-color:#26356B;background:var(--accent-dim)}
+  .tag.p{color:var(--purple);border-color:#332A5C;background:#1D1830}
+
+  /* ---------- callouts ---------- */
+  .callout{
+    border:1px solid var(--line);border-left:2px solid var(--accent);
+    background:var(--panel);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0 20px;
+  }
+  .callout .ct{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;font-weight:600}
+  .callout p:last-child{margin-bottom:0}
+  .callout.warn{border-left-color:var(--amber)} .callout.warn .ct{color:var(--amber)}
+  .callout.ok{border-left-color:var(--green)} .callout.ok .ct{color:var(--green)}
+
+  /* ---------- cards ---------- */
+  .grid{display:grid;gap:12px;margin:16px 0 20px}
+  .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px}
+  .card .k{font-family:var(--mono);font-size:10.5px;color:var(--muted-2);letter-spacing:.08em;text-transform:uppercase}
+  .card .v{font-size:20px;font-weight:600;margin:6px 0 2px;letter-spacing:-.02em}
+  .card .d{font-size:11.8px;color:var(--muted);line-height:1.6}
+  .card.accent{border-color:#26356B;background:linear-gradient(180deg,#141A2B 0%,#121418 100%)}
+
+  /* ---------- figures ---------- */
+  figure{margin:18px 0 8px}
+  .fig{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);padding:18px 16px;overflow-x:auto}
+  figcaption{font-size:11.5px;color:var(--muted-2);margin-top:9px;font-family:var(--mono);letter-spacing:.03em}
+  svg{display:block;max-width:100%;height:auto;margin:0 auto}
+
+  /* ---------- misc ---------- */
+  .kv{display:grid;grid-template-columns:150px 1fr;gap:2px 16px;font-size:12.8px;margin:12px 0}
+  .kv dt{color:var(--muted);font-family:var(--mono);font-size:11.4px;padding:4px 0;border-bottom:1px solid #1A1D22}
+  .kv dd{color:var(--text-2);padding:4px 0;border-bottom:1px solid #1A1D22}
+  .flow-step{display:flex;gap:14px;margin-bottom:2px}
+  .flow-step .idx{
+    flex:0 0 26px;height:26px;border-radius:6px;background:var(--panel-3);border:1px solid var(--line-2);
+    font-family:var(--mono);font-size:11px;color:var(--accent);display:flex;align-items:center;justify-content:center;
+  }
+  .flow-step .bd{flex:1;padding-bottom:14px;border-left:1px dashed transparent}
+  .flow-step .t{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:2px}
+  .flow-step .s{font-size:12.5px;color:var(--muted);line-height:1.65}
+  .foot{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;font-size:11.5px;color:var(--muted-2);font-family:var(--mono)}
+  @media (max-width:980px){
+    .shell{grid-template-columns:1fr}
+    aside{display:none}
+    main{padding:28px 20px 80px}
+    .g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside>
+  <div class="brand"><span class="brand-dot"></span><span class="brand-txt">COM on Azure</span></div>
+  <div class="brand-sub">目标架构设计 v1.0 · 培训配套 PoC</div>
+  <nav id="nav">
+    <div class="nav-group">设计基线</div>
+    <a href="#s1" class="active"><span class="n">01</span>设计基线与约束</a>
+    <a href="#s2"><span class="n">02</span>业务流程与状态机</a>
+    <div class="nav-group">架构</div>
+    <a href="#s3"><span class="n">03</span>总体架构与分层</a>
+    <a href="#s4"><span class="n">04</span>服务选型清单</a>
+    <a href="#s5"><span class="n">05</span>网络设计</a>
+    <a href="#s6"><span class="n">06</span>身份、权限与安全</a>
+    <a href="#s7"><span class="n">07</span>数据与集成设计</a>
+    <div class="nav-group">运行与治理</div>
+    <a href="#s8"><span class="n">08</span>可观测性与灾备</a>
+    <a href="#s9"><span class="n">09</span>成本模型</a>
+    <a href="#s10"><span class="n">10</span>Well-Architected 评估</a>
+    <div class="nav-group">交付</div>
+    <a href="#s11"><span class="n">11</span>与培训模块的映射</a>
+    <a href="#s12"><span class="n">12</span>PoC 分期与待确认项</a>
+  </nav>
+</aside>
+
+<main>
+  <div class="eyebrow">Architecture Design / Contract &amp; Order Management</div>
+  <h1>合同订单管理系统 <span>(COM)</span><br>Azure 目标架构设计</h1>
+  <p class="lede">
+    一套贯穿「下单 → 审批 → 归档」端到端的业务系统，作为《Azure 系统实战培训》的主线案例。
+    本文覆盖架构分层、Azure 服务选型、网络与身份设计、成本模型与治理策略，并对齐课程 9 个模块的讲解落点。
+  </p>
+  <div class="meta">
+    <span class="chip"><span class="dot"></span>版本 <b>v1.1</b></span>
+    <span class="chip">区域 <b>East Asia</b></span>
+    <span class="chip">形态 <b>教学级 PoC / 可演进到生产</b></span>
+    <span class="chip">课时 <b>6h × 2 次</b></span>
+    <span class="chip">日期 <b>2026-10-20</b></span>
+  </div>
+  <hr class="sep">
+
+  <!-- ============ 01 ============ -->
+  <section id="s1">
+    <h2><span class="num">01</span>设计基线与约束</h2>
+
+    <h3>1.1 培训大纲对本系统的硬约束</h3>
+    <p>大纲「课程架构设计」段落已给出服务的<strong>最小集合</strong>，架构设计不得偏离，否则课堂演示与课件对不上：</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>架构层面</th><th>大纲指定服务</th><th>承载的讲解要点</th></tr></thead>
+        <tbody>
+          <tr><td>计算</td><td><code>App Service</code>（Web / API）+ <code>Functions</code>（PDF / 通知 / OCR）+ <code>Logic Apps</code>（审批流）</td><td>PaaS 选型对比、部署槽、自动缩放、无服务器计费模型</td></tr>
+          <tr><td>网络</td><td><code>VNet</code> · <code>NSG</code> · <code>Private Endpoint</code> · <code>VPN / ExpressRoute</code></td><td>CIDR 与子网划分、安全组规则生效顺序、私有化接入</td></tr>
+          <tr><td>存储</td><td><code>Blob</code>（合同 PDF，<b>WORM 不可变归档</b>）· <code>Files</code>（共享）· <code>Service Bus</code>（异步解耦）</td><td>冗余策略、访问层与生命周期、不可变性策略的合规价值</td></tr>
+          <tr><td>数据</td><td><code>Azure SQL</code>（订单/合同/客户）+ <code>Redis</code>（缓存）+ 可选 <code>Cosmos DB</code>（审计日志）</td><td>关系型 vs NoSQL 的边界、缓存失效、审计留痕</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>1.2 非功能需求（PoC 目标值）</h3>
+    <div class="grid g4">
+      <div class="card"><div class="k">可用性</div><div class="v">99.9%</div><div class="d">单区域；生产目标 99.95% 需区域冗余</div></div>
+      <div class="card"><div class="k">提交 API P95</div><div class="v">&lt; 800<span style="font-size:12px">ms</span></div><div class="d">PDF 生成不进同步链路</div></div>
+      <div class="card"><div class="k">RTO / RPO</div><div class="v">4h / 1h</div><div class="d">备份 + 异地还原；ASR 仅作演示</div></div>
+      <div class="card"><div class="k">审计保留</div><div class="v">7<span style="font-size:12px">年</span></div><div class="d">合同原件 WORM 10 年 + 法务保留</div></div>
+    </div>
+
+    <h3>1.3 设计假设（需客户确认，见第 12 章）</h3>
+    <ul>
+      <li><strong>云环境</strong>：Azure Global（公有云），单区域 <code>East Asia</code>；中国区（21Vianet 运营）差异另附备注。</li>
+      <li><strong>身份源</strong>：以 Entra ID 云身份为主，不强制混合身份；企业 AD 同步仅作扩展讨论。</li>
+      <li><strong>部署形态</strong>：全部 PaaS，<b>不使用 IaaS 虚拟机承载业务</b>；VM/VMSS 仅作为「计算选型对比」与「Backup / ASR 演示」的配角资源。</li>
+      <li><strong>规模基线</strong>：日均订单 500 单、合同 PDF 日均 300 份、并发在线 50 人。教学级容量，非生产压测基线。</li>
+      <li><strong>数据合规</strong>：合同属于企业敏感数据，全程私有网络 + 静态加密；不引入跨境数据流动设计。</li>
+    </ul>
+
+    <div class="callout">
+      <div class="ct">设计原则</div>
+      <p class="tight"><strong>① PaaS 优先</strong>——把运维复杂度留给平台，课堂演示聚焦「配置决策」而非「装机器」。</p>
+      <p class="tight"><strong>② 默认私有</strong>——所有数据面走 Private Endpoint，公网仅暴露 Web 入口。</p>
+      <p class="tight"><strong>③ 无密码优先</strong>——应用身份全部用托管标识，Key Vault 里不存应用密钥。</p>
+      <p class="tight"><strong>④ 决策可解释</strong>——每个服务选型都留「为什么不是另一个」，这正是学员最需要的部分。</p>
+      <p><strong>⑤ 可整体销毁</strong>——全部资源打标签 + 单资源组，课后一条命令清理，成本可控。</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 ============ -->
+  <section id="s2">
+    <h2><span class="num">02</span>业务流程与状态机</h2>
+
+    <h3>2.1 主干流程：下单 → 审批 → 归档</h3>
+    <div class="fig">
+      <svg viewBox="0 0 1120 216" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 z" fill="#4A505A"/>
+          </marker>
+        </defs>
+        <g font-family="-apple-system,Segoe UI,Microsoft YaHei,sans-serif">
+          <g>
+            <rect x="10" y="34" width="165" height="96" rx="9" fill="#16181D" stroke="#2E3238"/>
+            <rect x="10" y="34" width="3" height="96" rx="1.5" fill="#6E8BFF"/>
+            <text x="24" y="56" font-size="9.5" font-family="monospace" fill="#6E8BFF">STEP 01</text>
+            <text x="24" y="76" font-size="14" fill="#E8E9EC" font-weight="600">下单</text>
+            <text x="24" y="96" font-size="10.5" fill="#8D919B">销售创建订单草稿</text>
+            <text x="24" y="113" font-size="10.5" fill="#8D919B">校验客户信用 / 金额</text>
+          </g>
+          <line x1="177" y1="82" x2="193" y2="82" stroke="#4A505A" marker-end="url(#ar)"/>
+          <g>
+            <rect x="197" y="34" width="165" height="96" rx="9" fill="#16181D" stroke="#2E3238"/>
+            <rect x="197" y="34" width="3" height="96" rx="1.5" fill="#6E8BFF"/>
+            <text x="211" y="56" font-size="9.5" font-family="monospace" fill="#6E8BFF">STEP 02</text>
+            <text x="211" y="76" font-size="14" fill="#E8E9EC" font-weight="600">提交</text>
+            <text x="211" y="96" font-size="10.5" fill="#8D919B">Draft → Submitted</text>
+            <text x="211" y="113" font-size="10.5" fill="#8D919B">发布 order-events</text>
+          </g>
+          <line x1="364" y1="82" x2="380" y2="82" stroke="#4A505A" marker-end="url(#ar)"/>
+          <g>
+            <rect x="384" y="34" width="165" height="96" rx="9" fill="#16181D" stroke="#2E3238"/>
+            <rect x="384" y="34" width="3" height="96" rx="1.5" fill="#A78BFA"/>
+            <text x="398" y="56" font-size="9.5" font-family="monospace" fill="#A78BFA">STEP 03</text>
+            <text x="398" y="76" font-size="14" fill="#E8E9EC" font-weight="600">审批</text>
+            <text x="398" y="96" font-size="10.5" fill="#8D919B">Logic Apps 多级会签</text>
+            <text x="398" y="113" font-size="10.5" fill="#8D919B">Web 待办页 · 金额分级</text>
+          </g>
+          <line x1="551" y1="82" x2="567" y2="82" stroke="#4A505A" marker-end="url(#ar)"/>
+          <g>
+            <rect x="571" y="34" width="165" height="96" rx="9" fill="#16181D" stroke="#2E3238"/>
+            <rect x="571" y="34" width="3" height="96" rx="1.5" fill="#48D1A0"/>
+            <text x="585" y="56" font-size="9.5" font-family="monospace" fill="#48D1A0">STEP 04</text>
+            <text x="585" y="76" font-size="14" fill="#E8E9EC" font-weight="600">合同生成</text>
+            <text x="585" y="96" font-size="10.5" fill="#8D919B">Functions 渲染 PDF</text>
+            <text x="585" y="113" font-size="10.5" fill="#8D919B">OCR 回读校验字段</text>
+          </g>
+          <line x1="738" y1="82" x2="754" y2="82" stroke="#4A505A" marker-end="url(#ar)"/>
+          <g>
+            <rect x="758" y="34" width="165" height="96" rx="9" fill="#16181D" stroke="#2E3238"/>
+            <rect x="758" y="34" width="3" height="96" rx="1.5" fill="#F5A524"/>
+            <text x="772" y="56" font-size="9.5" font-family="monospace" fill="#F5A524">STEP 05</text>
+            <text x="772" y="76" font-size="14" fill="#E8E9EC" font-weight="600">通知</text>
+            <text x="772" y="96" font-size="10.5" fill="#8D919B">邮件 / IM 通知相关方</text>
+            <text x="772" y="113" font-size="10.5" fill="#8D919B">失败进死信队列</text>
+          </g>
+          <line x1="925" y1="82" x2="941" y2="82" stroke="#4A505A" marker-end="url(#ar)"/>
+          <g>
+            <rect x="945" y="34" width="165" height="96" rx="9" fill="#16181D" stroke="#2E3238"/>
+            <rect x="945" y="34" width="3" height="96" rx="1.5" fill="#4DD0E1"/>
+            <text x="959" y="56" font-size="9.5" font-family="monospace" fill="#4DD0E1">STEP 06</text>
+            <text x="959" y="76" font-size="14" fill="#E8E9EC" font-weight="600">归档</text>
+            <text x="959" y="96" font-size="10.5" fill="#8D919B">WORM 不可变存储</text>
+            <text x="959" y="113" font-size="10.5" fill="#8D919B">摘要 + 审计留痕</text>
+          </g>
+
+          <line x1="10" y1="166" x2="1110" y2="166" stroke="#23262C"/>
+          <circle cx="92" cy="166" r="3.5" fill="#6E8BFF"/>
+          <circle cx="279" cy="166" r="3.5" fill="#6E8BFF"/>
+          <circle cx="466" cy="166" r="3.5" fill="#A78BFA"/>
+          <circle cx="653" cy="166" r="3.5" fill="#48D1A0"/>
+          <circle cx="840" cy="166" r="3.5" fill="#F5A524"/>
+          <circle cx="1027" cy="166" r="3.5" fill="#4DD0E1"/>
+          <text x="10" y="192" font-size="10" fill="#6C7079" font-family="monospace">同步链路终点：提交即返回（P95 &lt; 800ms）</text>
+          <text x="384" y="192" font-size="10" fill="#6C7079" font-family="monospace">异步链路起点：Service Bus</text>
+          <text x="856" y="192" font-size="10" fill="#6C7079" font-family="monospace">10 年保留 / 不可删除 / 不可修改</text>
+        </g>
+      </svg>
+      <figcaption>图 2-1　端到端主流程与同步/异步边界</figcaption>
+    </div>
+
+    <p><strong>关键设计点：</strong>「提交」是同步链路的终点。PDF 渲染、OCR、通知全部下沉到 Service Bus 之后的异步链路，这样即使 Functions 或第三方邮件网关故障，订单提交也不会被阻塞——这是课堂上讲「解耦」最直观的一刀。</p>
+
+    <h3>2.2 状态机</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>状态</th><th>含义</th><th>触发者</th><th>可迁移至</th></tr></thead>
+        <tbody>
+          <tr><td><code>Draft</code></td><td>草稿，可编辑可删除</td><td>销售</td><td>Submitted</td></tr>
+          <tr><td><code>Submitted</code></td><td>已提交，字段锁定</td><td>销售</td><td>InReview / Withdrawn</td></tr>
+          <tr><td><code>InReview</code></td><td>审批中（含多级会签）</td><td>Logic Apps</td><td>Approved / Rejected</td></tr>
+          <tr><td><code>Approved</code> / <code>Rejected</code></td><td>审批结论</td><td>审批人</td><td>Generating / Closed</td></tr>
+          <tr><td><code>Generating</code></td><td>合同 PDF 生成中</td><td>Functions</td><td>Generated / GenerateFailed</td></tr>
+          <tr><td><code>Archived</code></td><td>已归档至 WORM 容器，终态</td><td>Functions</td><td>—（不可逆）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>2.3 角色与触点</h3>
+    <div class="grid g4">
+      <div class="card"><div class="k">Sales</div><div class="v" style="font-size:14px">销售</div><div class="d">建单、改稿、撤回、查看进度</div></div>
+      <div class="card"><div class="k">Approver</div><div class="v" style="font-size:14px">审批人</div><div class="d">Web 待办页操作；按金额与条款分级</div></div>
+      <div class="card"><div class="k">Archivist</div><div class="v" style="font-size:14px">归档员</div><div class="d">归档确认、检索、合规取证</div></div>
+      <div class="card"><div class="k">Ops / Auditor</div><div class="v" style="font-size:14px">运维 / 审计</div><div class="d">只读监控、日志检索、成本核查</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 03 ============ -->
+  <section id="s3">
+    <h2><span class="num">03</span>总体架构与分层</h2>
+
+    <p>按大纲「经典三层架构（Web / App / Data）映射 Azure 服务」的要求，本系统严格保持三层边界，并在每层之间插入<strong>集成层</strong>与<strong>平台层</strong>两个横切面：</p>
+
+    <figure>
+      <div class="fig">
+        <svg viewBox="0 0 1120 800" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="a2" markerWidth="7" markerHeight="7" refX="5.5" refY="2.5" orient="auto">
+              <path d="M0,0 L5.5,2.5 L0,5 z" fill="#5A6070"/>
+            </marker>
+            <marker id="a3" markerWidth="7" markerHeight="7" refX="5.5" refY="2.5" orient="auto">
+              <path d="M0,0 L5.5,2.5 L0,5 z" fill="#3E4450"/>
+            </marker>
+          </defs>
+          <g font-family="-apple-system,Segoe UI,Microsoft YaHei,sans-serif">
+
+            <!-- layer labels -->
+            <g font-size="9.5" font-family="monospace" fill="#4E535C" letter-spacing="1">
+              <text x="8" y="30" transform="rotate(-90 8 30)">CLIENT</text>
+            </g>
+
+            <!-- ===== 用户层 ===== -->
+            <text x="30" y="26" font-size="10" font-family="monospace" fill="#4E535C" letter-spacing="1.4">01 · CONSUMER</text>
+            <g>
+              <rect x="30" y="36" width="200" height="52" rx="8" fill="#16181D" stroke="#2E3238"/>
+              <text x="46" y="58" font-size="12.5" fill="#E8E9EC" font-weight="600">销售 · 审批人</text>
+              <text x="46" y="74" font-size="10.5" fill="#8D919B">Web 门户 · 邮件提醒</text>
+
+              <rect x="246" y="36" width="200" height="52" rx="8" fill="#16181D" stroke="#2E3238"/>
+              <text x="262" y="58" font-size="12.5" fill="#E8E9EC" font-weight="600">法务 · 运维 · 审计</text>
+              <text x="262" y="74" font-size="10.5" fill="#8D919B">Portal / CLI / Power BI</text>
+
+              <rect x="870" y="36" width="220" height="52" rx="8" fill="#141A2B" stroke="#26356B"/>
+              <text x="886" y="58" font-size="12.5" fill="#C9D3FF" font-weight="600">Microsoft Entra ID</text>
+              <text x="886" y="74" font-size="10.5" fill="#7E8AAE">租户 · 用户 · 组 · 条件访问</text>
+            </g>
+            <line x1="230" y1="88" x2="230" y2="110" stroke="#5A6070" marker-end="url(#a2)"/>
+            <line x1="332" y1="88" x2="332" y2="110" stroke="#5A6070" marker-end="url(#a2)"/>
+
+            <!-- ===== 接入/表现层 ===== -->
+            <text x="30" y="128" font-size="10" font-family="monospace" fill="#4E535C" letter-spacing="1.4">02 · PRESENTATION (Web)</text>
+            <rect x="30" y="138" width="620" height="74" rx="10" fill="none" stroke="#2E3238" stroke-dasharray="4 4"/>
+            <g>
+              <rect x="44" y="150" width="188" height="50" rx="7" fill="#15181E" stroke="#3A3F49"/>
+              <text x="58" y="170" font-size="12" fill="#E8E9EC" font-weight="600">App Service — Web</text>
+              <text x="58" y="186" font-size="10" fill="#8D919B">Blazor / React 前端 · B1 → P0v3</text>
+
+              <rect x="246" y="150" width="188" height="50" rx="7" fill="#15181E" stroke="#3A3F49"/>
+              <text x="260" y="170" font-size="12" fill="#E8E9EC" font-weight="600">App Service — API</text>
+              <text x="260" y="186" font-size="10" fill="#8D919B">.NET 8 Minimal API · 部署槽</text>
+
+              <rect x="448" y="150" width="188" height="50" rx="7" fill="#15181E" stroke="#3A3F49" stroke-dasharray="3 3"/>
+              <text x="462" y="170" font-size="12" fill="#C3C6CC" font-weight="600">Front Door + WAF</text>
+              <text x="462" y="186" font-size="10" fill="#8D919B">可选 · 全局入口 / 限流</text>
+            </g>
+            <rect x="770" y="138" width="320" height="74" rx="10" fill="#101318" stroke="#23262C"/>
+            <text x="786" y="160" font-size="10" font-family="monospace" fill="#6E8BFF">ACCESS CONTROL</text>
+            <text x="786" y="178" font-size="10.5" fill="#8D919B">RBAC 角色分配 · 条件访问 · PIM 临时提权</text>
+            <text x="786" y="194" font-size="10.5" fill="#8D919B">应用身份：系统/用户分配托管标识</text>
+
+            <line x1="332" y1="212" x2="332" y2="238" stroke="#5A6070" marker-end="url(#a2)"/>
+            <text x="342" y="230" font-size="9.5" font-family="monospace" fill="#6C7079">HTTPS 443 / VNet Integration</text>
+
+            <!-- ===== 应用层 ===== -->
+            <text x="30" y="256" font-size="10" font-family="monospace" fill="#4E535C" letter-spacing="1.4">03 · APPLICATION (App)</text>
+            <g>
+              <rect x="30" y="266" width="300" height="66" rx="9" fill="#16181D" stroke="#2E3238"/>
+              <rect x="30" y="266" width="3" height="66" rx="1.5" fill="#48D1A0"/>
+              <text x="46" y="288" font-size="12" fill="#E8E9EC" font-weight="600">Azure Functions</text>
+              <text x="46" y="305" font-size="10.3" fill="#8D919B">PDF 渲染 · OCR 校验 · 通知投递</text>
+              <text x="46" y="321" font-size="9.5" font-family="monospace" fill="#48D1A0">Flex Consumption · 队列触发</text>
+
+              <rect x="346" y="266" width="300" height="66" rx="9" fill="#16181D" stroke="#2E3238"/>
+              <rect x="346" y="266" width="3" height="66" rx="1.5" fill="#A78BFA"/>
+              <text x="362" y="288" font-size="12" fill="#E8E9EC" font-weight="600">Azure Logic Apps</text>
+              <text x="362" y="305" font-size="10.3" fill="#8D919B">多级审批编排 · 等待 Web 回调</text>
+              <text x="362" y="321" font-size="9.5" font-family="monospace" fill="#A78BFA">Consumption · 仅内置连接器，无需 PP 许可</text>
+
+              <rect x="662" y="266" width="180" height="66" rx="9" fill="#16181D" stroke="#2E3238"/>
+              <text x="678" y="288" font-size="12" fill="#E8E9EC" font-weight="600">Azure Container Registry</text>
+              <text x="678" y="305" font-size="10.3" fill="#8D919B">镜像仓库（可选）</text>
+              <text x="678" y="321" font-size="9.5" font-family="monospace" fill="#6C7079">Basic · 私有端点</text>
+            </g>
+
+            <line x1="332" y1="332" x2="332" y2="358" stroke="#5A6070" marker-end="url(#a2)"/>
+            <text x="342" y="350" font-size="9.5" font-family="monospace" fill="#6C7079">发布事件 / 提交作业</text>
+
+            <!-- ===== 集成层 ===== -->
+            <text x="30" y="376" font-size="10" font-family="monospace" fill="#4E535C" letter-spacing="1.4">04 · INTEGRATION</text>
+            <rect x="30" y="386" width="812" height="78" rx="10" fill="#131720" stroke="#2A3550"/>
+            <g>
+              <rect x="44" y="398" width="238" height="54" rx="7" fill="#161A24" stroke="#33405E"/>
+              <text x="58" y="418" font-size="11.5" fill="#E8E9EC" font-weight="600">Service Bus · Topic</text>
+              <text x="58" y="433" font-size="10" font-family="monospace" fill="#7E8AAE">order-events（3 个订阅）</text>
+              <text x="58" y="447" font-size="9.5" fill="#6C7079">Standard · 会话/死信</text>
+
+              <rect x="294" y="398" width="238" height="54" rx="7" fill="#161A24" stroke="#33405E"/>
+              <text x="308" y="418" font-size="11.5" fill="#E8E9EC" font-weight="600">Service Bus · Queue</text>
+              <text x="308" y="433" font-size="10" font-family="monospace" fill="#7E8AAE">contract-jobs</text>
+              <text x="308" y="447" font-size="9.5" fill="#6C7079">最大投递 5 次 → DLQ</text>
+
+              <rect x="544" y="398" width="238" height="54" rx="7" fill="#161A24" stroke="#33405E"/>
+              <text x="558" y="418" font-size="11.5" fill="#E8E9EC" font-weight="600">Service Bus · Queue</text>
+              <text x="558" y="433" font-size="10" font-family="monospace" fill="#7E8AAE">notification-jobs</text>
+              <text x="558" y="447" font-size="9.5" fill="#6C7079">邮件 / IM 出口</text>
+            </g>
+
+            <!-- data layer -->
+            <text x="30" y="490" font-size="10" font-family="monospace" fill="#4E535C" letter-spacing="1.4">05 · DATA</text>
+            <g>
+              <rect x="30" y="500" width="178" height="78" rx="9" fill="#16181D" stroke="#2E3238"/>
+              <rect x="30" y="500" width="3" height="78" rx="1.5" fill="#6E8BFF"/>
+              <text x="44" y="520" font-size="11.5" fill="#E8E9EC" font-weight="600">Azure SQL Database</text>
+              <text x="44" y="536" font-size="9.8" fill="#8D919B">客户 / 订单 / 合同 / 审批</text>
+              <text x="44" y="551" font-size="9.5" font-family="monospace" fill="#6C7079">S0 · 自动备份 7–35 天</text>
+              <text x="44" y="566" font-size="9.5" font-family="monospace" fill="#6C7079">Entra 认证（无 SQL 口令）</text>
+
+              <rect x="220" y="500" width="178" height="78" rx="9" fill="#16181D" stroke="#2E3238"/>
+              <rect x="220" y="500" width="3" height="78" rx="1.5" fill="#F5A524"/>
+              <text x="234" y="520" font-size="11.5" fill="#E8E9EC" font-weight="600">Blob Storage</text>
+              <text x="234" y="536" font-size="9.8" fill="#8D919B">contracts / templates</text>
+              <text x="234" y="551" font-size="9.5" font-family="monospace" fill="#F5A524">WORM 不可变（10 年）</text>
+              <text x="234" y="566" font-size="9.5" font-family="monospace" fill="#6C7079">GRS + 生命周期分层</text>
+
+              <rect x="410" y="500" width="168" height="78" rx="9" fill="#16181D" stroke="#2E3238"/>
+              <rect x="410" y="500" width="3" height="78" rx="1.5" fill="#4DD0E1"/>
+              <text x="424" y="520" font-size="11.5" fill="#E8E9EC" font-weight="600">Azure Files</text>
+              <text x="424" y="536" font-size="9.8" fill="#8D919B">共享模板 / 批量导入</text>
+              <text x="424" y="551" font-size="9.5" font-family="monospace" fill="#6C7079">SMB 3.1 · 私有端点</text>
+              <text x="424" y="566" font-size="9.5" font-family="monospace" fill="#6C7079">仅演示场景使用</text>
+
+              <rect x="590" y="500" width="168" height="78" rx="9" fill="#16181D" stroke="#2E3238"/>
+              <rect x="590" y="500" width="3" height="78" rx="1.5" fill="#A78BFA"/>
+              <text x="604" y="520" font-size="11.5" fill="#E8E9EC" font-weight="600">Cosmos DB</text>
+              <text x="604" y="536" font-size="9.8" fill="#8D919B">审计事件流（可选）</text>
+              <text x="604" y="551" font-size="9.5" font-family="monospace" fill="#6C7079">Serverless · 分区 orderId</text>
+              <text x="604" y="566" font-size="9.5" font-family="monospace" fill="#6C7079">TTL 7 年</text>
+
+              <rect x="770" y="500" width="168" height="78" rx="9" fill="#16181D" stroke="#2E3238"/>
+              <rect x="770" y="500" width="3" height="78" rx="1.5" fill="#48D1A0"/>
+              <text x="784" y="520" font-size="11.5" fill="#E8E9EC" font-weight="600">Azure Managed Redis</text>
+              <text x="784" y="536" font-size="9.8" fill="#8D919B">客户档案 / 字典缓存</text>
+              <text x="784" y="551" font-size="9.5" font-family="monospace" fill="#6C7079">最小规格 · 可关闭省成本</text>
+              <text x="784" y="566" font-size="9.5" font-family="monospace" fill="#6C7079">替代已退役的 Cache for Redis</text>
+            </g>
+
+            <!-- links integration -> data -->
+            <line x1="332" y1="464" x2="332" y2="500" stroke="#3E4450" marker-end="url(#a3)"/>
+            <line x1="120" y1="464" x2="120" y2="500" stroke="#3E4450" marker-end="url(#a3)"/>
+            <line x1="660" y1="464" x2="660" y2="500" stroke="#3E4450" marker-end="url(#a3)"/>
+
+            <!-- ===== 平台横切层 ===== -->
+            <text x="30" y="620" font-size="10" font-family="monospace" fill="#4E535C" letter-spacing="1.4">06 · PLATFORM (cross-cutting)</text>
+            <g>
+              <rect x="30" y="630" width="176" height="60" rx="8" fill="#101318" stroke="#23262C"/>
+              <text x="44" y="650" font-size="11" fill="#E8E9EC" font-weight="600">Key Vault</text>
+              <text x="44" y="666" font-size="9.5" fill="#8D919B">证书 / 第三方令牌</text>
+              <text x="44" y="680" font-size="9.5" font-family="monospace" fill="#6C7079">RBAC 模式 · 私有端点</text>
+
+              <rect x="218" y="630" width="176" height="60" rx="8" fill="#101318" stroke="#23262C"/>
+              <text x="232" y="650" font-size="11" fill="#E8E9EC" font-weight="600">App Insights</text>
+              <text x="232" y="666" font-size="9.5" fill="#8D919B">分布式追踪 / 依赖图</text>
+              <text x="232" y="680" font-size="9.5" font-family="monospace" fill="#6C7079">采样 30% · 关联 ID</text>
+
+              <rect x="406" y="630" width="176" height="60" rx="8" fill="#101318" stroke="#23262C"/>
+              <text x="420" y="650" font-size="11" fill="#E8E9EC" font-weight="600">Log Analytics</text>
+              <text x="420" y="666" font-size="9.5" fill="#8D919B">统一日志工作区 / KQL</text>
+              <text x="420" y="680" font-size="9.5" font-family="monospace" fill="#6C7079">30 天热存 + 归档</text>
+
+              <rect x="594" y="630" width="176" height="60" rx="8" fill="#101318" stroke="#23262C"/>
+              <text x="608" y="650" font-size="11" fill="#E8E9EC" font-weight="600">Monitor Alerts</text>
+              <text x="608" y="666" font-size="9.5" fill="#8D919B">指标 / 日志 / 活动日志</text>
+              <text x="608" y="680" font-size="9.5" font-family="monospace" fill="#6C7079">动作组 → 邮件/Webhook</text>
+
+              <rect x="782" y="630" width="156" height="60" rx="8" fill="#101318" stroke="#23262C"/>
+              <text x="796" y="650" font-size="11" fill="#E8E9EC" font-weight="600">Defender + Policy</text>
+              <text x="796" y="666" font-size="9.5" fill="#8D919B">安全评分 / 合规基线</text>
+              <text x="796" y="680" font-size="9.5" font-family="monospace" fill="#6C7079">Deny / Audit 效果</text>
+            </g>
+
+            <!-- ===== 网络底座 ===== -->
+            <rect x="30" y="710" width="1060" height="66" rx="10" fill="#0F1216" stroke="#2A3550"/>
+            <text x="46" y="732" font-size="10" font-family="monospace" fill="#6E8BFF" letter-spacing="1">VIRTUAL NETWORK · 10.20.0.0/16</text>
+            <text x="46" y="752" font-size="10.5" fill="#8D919B">snet-app 10.20.1.0/24（VNet 集成）· snet-pe 10.20.2.0/24（Private Endpoints）· snet-mgmt 10.20.3.0/26（Bastion）</text>
+            <text x="46" y="768" font-size="10.5" fill="#6C7079" font-family="monospace">NSG 默认拒绝 · Private DNS Zones · NAT Gateway 出网 · VPN/ER 经 Hub 对等</text>
+            <rect x="860" y="726" width="216" height="34" rx="6" fill="#141A2B" stroke="#26356B"/>
+            <text x="874" y="748" font-size="10" font-family="monospace" fill="#7E8AAE">Hub 10.10.0.0/16 ⇄ Peering</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>图 3-1　COM 系统分层架构（PaaS 全托管，数据面全部私有化）</figcaption>
+    </figure>
+
+    <h3>3.1 三层映射说明</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>逻辑层</th><th>职责</th><th>Azure 落地</th><th>为什么不是别的</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>Web / 表现</b></td>
+            <td>页面渲染、登录跳转、API 网关式路由</td>
+            <td>App Service（Linux，B1 → P0v3）</td>
+            <td>不用 AKS：团队无 K8s 运维能力，教学场景也不需要编排收益；不用 Static Web Apps：需要与 API 同域、同 VNet 集成</td>
+          </tr>
+          <tr>
+            <td><b>App / 应用</b></td>
+            <td>业务规则、长耗时任务、流程编排</td>
+            <td>Functions（事件驱动）+ Logic Apps（审批编排）</td>
+            <td>PDF/OCR 突发且空闲期长 → 按执行计费；审批是「可视化流程 + 长事务等待」，Logic Apps 的内置 Callback 动作天然适合「等人 48 小时」，且不引入第三方许可依赖</td>
+          </tr>
+          <tr>
+            <td><b>Data / 数据</b></td>
+            <td>事务一致性、文件对象、审计留痕、热点缓存</td>
+            <td>SQL + Blob + Cosmos + Redis + Files</td>
+            <td>订单/合同是强关系模型 → SQL；PDF 是大对象 → Blob；审计是追加型高写入 → Cosmos；缓存 → Redis</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout warn">
+      <div class="ct">课堂上值得强调的边界</div>
+      <p>不要把「合同 PDF」放进 Azure SQL 的 <code>varbinary(max)</code>。合同单体 2–8 MB、年均 10 万份，塞进数据库会让备份体积、还原时间和 DTU 成本同时失控。数据库只存 <code>BlobPath</code> + <code>SHA256</code> + 元数据——这是学员在真实项目里最常踩的坑之一。</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 ============ -->
+  <section id="s4">
+    <h2><span class="num">04</span>服务选型清单</h2>
+    <p>下表是本 PoC 的「资源清单 + 规格 + 命名」，同时也是第 7 模块「常用组件配置」的演示脚本基础。</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>#</th><th>资源</th><th>资源名称（示例）</th><th>规格 / SKU</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td class="num-td">01</td><td>资源组</td><td><code>rg-com-poc-eastasia</code></td><td>—</td><td>全部资源单组，便于整体清理</td></tr>
+          <tr><td class="num-td">02</td><td>虚拟网络</td><td><code>vnet-com-spoke</code></td><td>10.20.0.0/16</td><td>业务 VNet（Spoke）</td></tr>
+          <tr><td class="num-td">03</td><td>虚拟网络</td><td><code>vnet-com-hub</code></td><td>10.10.0.0/16</td><td>Hub，演示对等与共享服务</td></tr>
+          <tr><td class="num-td">04</td><td>网络安全组</td><td><code>nsg-snet-app</code> / <code>nsg-snet-pe</code></td><td>—</td><td>子网级入站出站控制</td></tr>
+          <tr><td class="num-td">05</td><td>App Service Plan</td><td><code>asp-com-poc</code></td><td>B1 Linux（演示可升 P0v3）</td><td>承载 Web + API 两个应用</td></tr>
+          <tr><td class="num-td">06</td><td>App Service</td><td><code>app-com-web-poc</code></td><td>—</td><td>前端门户</td></tr>
+          <tr><td class="num-td">07</td><td>App Service</td><td><code>app-com-api-poc</code></td><td>—</td><td>订单/合同 API，含 <code>staging</code> 部署槽</td></tr>
+          <tr><td class="num-td">08</td><td>Function App</td><td><code>func-com-worker-poc</code></td><td>Flex Consumption</td><td>PDF 渲染 / OCR / 通知</td></tr>
+          <tr><td class="num-td">09</td><td>Logic App</td><td><code>la-com-approval-poc</code></td><td>Consumption</td><td>审批编排（Web 审批 + 回调等待）</td></tr>
+          <tr><td class="num-td">10</td><td>通信服务</td><td><code>acs-com-email</code></td><td>Email · 按量（$0.00025/封）</td><td>审批提醒 / 归档通知，不依赖 M365</td></tr>
+          <tr><td class="num-td">11</td><td>SQL Server / DB</td><td><code>sql-com-poc</code> / <code>sqldb-com</code></td><td>S0（10 DTU）</td><td>结构化业务数据</td></tr>
+          <tr><td class="num-td">12</td><td>存储账户</td><td><code>stcompoc&lt;随机&gt;</code></td><td>Standard GPv2 · GRS</td><td>Blob（WORM 归档）+ Files</td></tr>
+          <tr><td class="num-td">13</td><td>Service Bus</td><td><code>sb-com-poc</code></td><td>Standard</td><td>1 Topic + 2 Queue + 死信</td></tr>
+          <tr><td class="num-td">14</td><td>Cosmos DB</td><td><code>cosmos-com-audit</code></td><td>Serverless · 单区域</td><td>审计事件（可选）</td></tr>
+          <tr><td class="num-td">15</td><td>Redis</td><td><code>redis-com-cache</code></td><td>Azure Managed Redis 最小规格</td><td>缓存（可关闭）</td></tr>
+          <tr><td class="num-td">16</td><td>Key Vault</td><td><code>kv-com-poc-&lt;随机&gt;</code></td><td>Standard · RBAC 模式</td><td>第三方 API 令牌 / 证书</td></tr>
+          <tr><td class="num-td">17</td><td>Log Analytics</td><td><code>law-com-poc</code></td><td>Pay-as-you-go</td><td>统一日志与 KQL</td></tr>
+          <tr><td class="num-td">18</td><td>App Insights</td><td><code>appi-com-poc</code></td><td>基于工作区</td><td>APM 与端到端追踪</td></tr>
+          <tr><td class="num-td">19</td><td>Private Endpoint</td><td><code>pe-sql</code> / <code>pe-blob</code> / <code>pe-kv</code> / <code>pe-sb</code></td><td>—</td><td>数据面私有接入（4 个为性价比最优切分）</td></tr>
+          <tr><td class="num-td">20</td><td>Bastion</td><td><code>bastion-com</code></td><td>Basic（按需开启）</td><td>演示管理面隔离；无 VM 时可暂缓</td></tr>
+          <tr><td class="num-td">21</td><td>预算</td><td><code>budget-com-monthly</code></td><td>$150 / 月，50%/80%/100% 告警</td><td>成本治理演示</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>4.1 关键选型决策记录（ADR）</h3>
+    <p>这是课堂「识别关键决策点」的抓手——每条 ADR 都是一个可以现场展开讨论的取舍。</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>决策</th><th>选型</th><th>备选</th><th>取舍理由</th></tr></thead>
+        <tbody>
+          <tr><td style="white-space:nowrap"><b>ADR-01</b><br>计算形态</td><td>App Service</td><td>AKS / Container Apps / VM</td><td>无集群运维负担；内置槽位切换与自动缩放；教学可解释性最强。规模到日均百万请求再评估 AKS</td></tr>
+          <tr><td style="white-space:nowrap"><b>ADR-02</b><br>审批实现</td><td>Logic Apps（编排）+ 自有 Web 审批页（交互）</td><td>Power Automate + Approvals 连接器 / 自研状态机 / Durable Functions</td><td><b>客户无 Power Platform 许可，Approvals 连接器与 Teams 审批卡片不可用</b>，故人工交互收敛到自有门户，Logic Apps 只用内置 Callback 动作「等结果」；保留可视化运行历史与超时分支，且审批数据不出本系统</td></tr>
+          <tr><td style="white-space:nowrap"><b>ADR-03</b><br>消息中间件</td><td>Service Bus</td><td>Storage Queue / Event Grid</td><td>需要死信、重复检测、会话有序、事务性发送——Storage Queue 只能解决「排队」；Event Grid 是通知而非任务队列</td></tr>
+          <tr><td style="white-space:nowrap"><b>ADR-04</b><br>合同存储</td><td>Blob + 容器级不可变策略</td><td>SQL varbinary / 第三方归档</td><td>WORM 由平台保证，可出具合规证明；数据量线性增长不影响数据库性能</td></tr>
+          <tr><td style="white-space:nowrap"><b>ADR-05</b><br>审计存储</td><td>Cosmos DB（可选）</td><td>SQL 追加表 / Log Analytics</td><td>追加写、按订单分区、TTL 自动过期；若客户已用 SIEM，可改用 Log Analytics 或直接投 Event Hub</td></tr>
+          <tr><td style="white-space:nowrap"><b>ADR-06</b><br>凭据管理</td><td>托管标识 + Key Vault RBAC</td><td>连接字符串 + 密钥</td><td>零密钥落盘，轮换成本为零；这是 Security 模块最好的正面案例</td></tr>
+          <tr><td style="white-space:nowrap"><b>ADR-07</b><br>数据库访问</td><td>Entra 认证（无 SQL 账号）</td><td>SQL 登录名 + 口令</td><td>与 ADR-06 一致；缺点是连接串需指定 Authentication=Active Directory Managed Identity</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 05 ============ -->
+  <section id="s5">
+    <h2><span class="num">05</span>网络设计</h2>
+
+    <h3>5.1 地址空间与子网规划</h3>
+    <p>课堂重点：<strong>先算地址，再建资源</strong>。预留增长空间、避免与本地网段重叠，是上线后最难改的一件事。</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>VNet</th><th>地址空间</th><th>子网</th><th>CIDR</th><th>可用 IP</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="4"><code>vnet-com-hub</code></td><td rowspan="4">10.10.0.0/16</td><td><code>GatewaySubnet</code></td><td>10.10.0.0/27</td><td class="num-td">27</td><td>VPN / ExpressRoute 网关（固定名称，不可改名）</td></tr>
+          <tr><td><code>AzureBastionSubnet</code></td><td>10.10.1.0/26</td><td class="num-td">59</td><td>Bastion（要求 /26 及以上）</td></tr>
+          <tr><td><code>snet-shared</code></td><td>10.10.2.0/24</td><td class="num-td">251</td><td>共享服务：跳板、监控代理、AD 只读域控（可选）</td></tr>
+          <tr><td><code>AzureFirewallSubnet</code></td><td>10.10.3.0/26</td><td class="num-td">59</td><td>可选：集中出网与东西向管控</td></tr>
+          <tr><td rowspan="3"><code>vnet-com-spoke</code></td><td rowspan="3">10.20.0.0/16</td><td><code>snet-app</code></td><td>10.20.1.0/24</td><td class="num-td">251</td><td>App Service VNet 集成 / Functions 出站</td></tr>
+          <tr><td><code>snet-pe</code></td><td>10.20.2.0/24</td><td class="num-td">251</td><td>全部 Private Endpoint（独立子网便于统一 NSG）</td></tr>
+          <tr><td><code>snet-mgmt</code></td><td>10.20.3.0/26</td><td class="num-td">59</td><td>运维跳板 VM（Backup / ASR 演示用，可销毁）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid g3">
+      <div class="card"><div class="k">地址规划原则</div><div class="d">每层预留 4 倍增长；子网不跨 AZ 拆分（PaaS 无需）；<code>/27</code> 起步的网关子网不可复用</div></div>
+      <div class="card"><div class="k">禁止</div><div class="d">不要用 10.0.0.0/16 直接对撞本地网段；不要给 PE 子网配 NSG 默认拒绝全部入站后才想起 DNS</div></div>
+      <div class="card"><div class="k">成本提示</div><div class="d">VNet / 子网 / NSG / 对等互联本身近乎免费，成本几乎只在 VPN 网关与防火墙</div></div>
+    </div>
+
+    <h3>5.2 拓扑：Hub-Spoke + 私有接入</h3>
+    <figure>
+      <div class="fig">
+        <svg viewBox="0 0 1120 400" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="b1" markerWidth="7" markerHeight="7" refX="5.5" refY="2.5" orient="auto"><path d="M0,0 L5.5,2.5 L0,5 z" fill="#5A6070"/></marker>
+            <marker id="b3" markerWidth="7" markerHeight="7" refX="5.5" refY="2.5" orient="auto"><path d="M0,0 L5.5,2.5 L0,5 z" fill="#3E4450"/></marker>
+          </defs>
+          <g font-family="-apple-system,Segoe UI,Microsoft YaHei,sans-serif">
+
+            <!-- internet -->
+            <rect x="8" y="8" width="150" height="60" rx="9" fill="#141A2B" stroke="#26356B"/>
+            <text x="22" y="30" font-size="11" fill="#C9D3FF" font-weight="600">互联网用户</text>
+            <text x="22" y="47" font-size="9.5" fill="#7E8AAE">HTTPS 443 · TLS 1.2+</text>
+            <text x="22" y="61" font-size="9" font-family="monospace" fill="#6C7079">WAF / 条件访问</text>
+
+            <line x1="158" y1="30" x2="584" y2="30" stroke="#5A6070" stroke-dasharray="4 4" marker-end="url(#b1)"/>
+            <text x="290" y="24" font-size="9" font-family="monospace" fill="#6C7079">唯一公网暴露面</text>
+
+            <rect x="590" y="8" width="212" height="32" rx="16" fill="#16181D" stroke="#3A3F49"/>
+            <text x="606" y="28" font-size="10.5" fill="#E8E9EC">App Service · 443 入口</text>
+
+            <line x1="660" y1="40" x2="660" y2="80" stroke="#5A6070" marker-end="url(#b1)"/>
+            <text x="668" y="62" font-size="8.5" font-family="monospace" fill="#6C7079">VNet 集成</text>
+
+            <!-- on prem -->
+            <rect x="8" y="150" width="150" height="122" rx="9" fill="#16181D" stroke="#2E3238"/>
+            <text x="22" y="172" font-size="11" fill="#E8E9EC" font-weight="600">本地数据中心</text>
+            <text x="22" y="189" font-size="9.5" fill="#8D919B">ERP · AD DS</text>
+            <text x="22" y="204" font-size="9" font-family="monospace" fill="#6C7079">192.168.0.0/16</text>
+            <text x="22" y="228" font-size="9" font-family="monospace" fill="#6C7079">VPN / ExpressRoute</text>
+            <text x="22" y="243" font-size="9" font-family="monospace" fill="#6C7079">BGP 动态路由</text>
+            <line x1="158" y1="211" x2="186" y2="211" stroke="#5A6070" marker-end="url(#b1)"/>
+
+            <!-- HUB -->
+            <rect x="190" y="50" width="300" height="290" rx="12" fill="#0F1216" stroke="#2A3550"/>
+            <text x="206" y="72" font-size="9.5" font-family="monospace" fill="#6E8BFF" letter-spacing="1">HUB VNET · 10.10.0.0/16</text>
+            <g>
+              <rect x="206" y="82" width="268" height="50" rx="7" fill="#161A24" stroke="#33405E"/>
+              <text x="218" y="101" font-size="10" fill="#E8E9EC">GatewaySubnet 10.10.0.0/27</text>
+              <text x="218" y="117" font-size="9" font-family="monospace" fill="#7E8AAE">VPN GW · 站点到站点</text>
+
+              <rect x="206" y="142" width="268" height="50" rx="7" fill="#161A24" stroke="#33405E"/>
+              <text x="218" y="161" font-size="10" fill="#E8E9EC">AzureBastionSubnet 10.10.1.0/26</text>
+              <text x="218" y="177" font-size="9" font-family="monospace" fill="#7E8AAE">无公网 IP 的运维入口</text>
+
+              <rect x="206" y="202" width="268" height="50" rx="7" fill="#161A24" stroke="#33405E"/>
+              <text x="218" y="221" font-size="10" fill="#E8E9EC">snet-shared 10.10.2.0/24</text>
+              <text x="218" y="237" font-size="9" font-family="monospace" fill="#7E8AAE">监控代理 / 共享服务</text>
+
+              <rect x="206" y="262" width="268" height="50" rx="7" fill="#101318" stroke="#23262C" stroke-dasharray="3 3"/>
+              <text x="218" y="281" font-size="10" fill="#8D919B">AzureFirewallSubnet 10.10.3.0/26</text>
+              <text x="218" y="297" font-size="9" font-family="monospace" fill="#6C7079">可选 · 集中出网管控</text>
+            </g>
+
+            <!-- peering -->
+            <line x1="490" y1="210" x2="542" y2="210" stroke="#6E8BFF" stroke-width="1.4" stroke-dasharray="5 4"/>
+            <text x="516" y="202" font-size="8" font-family="monospace" fill="#6E8BFF" text-anchor="middle">Peering</text>
+            <text x="516" y="226" font-size="7.5" font-family="monospace" fill="#6C7079" text-anchor="middle">双向</text>
+
+            <!-- SPOKE -->
+            <rect x="545" y="50" width="300" height="290" rx="12" fill="#0F1216" stroke="#2A3550"/>
+            <text x="561" y="72" font-size="9.5" font-family="monospace" fill="#6E8BFF" letter-spacing="1">SPOKE VNET · 10.20.0.0/16</text>
+            <g>
+              <rect x="561" y="82" width="268" height="56" rx="7" fill="#161A24" stroke="#33405E"/>
+              <text x="573" y="101" font-size="10" fill="#E8E9EC">snet-app 10.20.1.0/24</text>
+              <text x="573" y="117" font-size="9" font-family="monospace" fill="#7E8AAE">App Service VNet 集成</text>
+              <text x="573" y="132" font-size="9" font-family="monospace" fill="#6C7079">Functions 出站（委派）</text>
+
+              <rect x="561" y="148" width="268" height="56" rx="7" fill="#161A24" stroke="#33405E"/>
+              <text x="573" y="167" font-size="10" fill="#E8E9EC">snet-pe 10.20.2.0/24</text>
+              <text x="573" y="183" font-size="9" font-family="monospace" fill="#7E8AAE">4 × Private Endpoint</text>
+              <text x="573" y="198" font-size="9" font-family="monospace" fill="#6C7079">SQL · Blob · KV · Bus</text>
+
+              <rect x="561" y="214" width="268" height="50" rx="7" fill="#101318" stroke="#23262C"/>
+              <text x="573" y="233" font-size="10" fill="#8D919B">snet-mgmt 10.20.3.0/26</text>
+              <text x="573" y="249" font-size="9" font-family="monospace" fill="#6C7079">演示 VM（Backup / ASR）</text>
+
+              <rect x="561" y="274" width="268" height="50" rx="7" fill="#101318" stroke="#23262C" stroke-dasharray="3 3"/>
+              <text x="573" y="293" font-size="10" fill="#8D919B">NAT Gateway</text>
+              <text x="573" y="309" font-size="9" font-family="monospace" fill="#6C7079">固定出网 IP · 替代默认 SNAT</text>
+            </g>
+
+            <!-- PaaS -->
+            <rect x="890" y="50" width="222" height="290" rx="12" fill="#101318" stroke="#23262C"/>
+            <text x="906" y="72" font-size="9.5" font-family="monospace" fill="#6C7079" letter-spacing="1">PaaS · PRIVATE ACCESS</text>
+            <g font-size="9.5" font-family="monospace" fill="#C3C6CC">
+              <rect x="906" y="82" width="192" height="30" rx="6" fill="#16181D" stroke="#2E3238"/><text x="918" y="101">Azure SQL</text>
+              <rect x="906" y="120" width="192" height="30" rx="6" fill="#16181D" stroke="#2E3238"/><text x="918" y="139">Blob / Files</text>
+              <rect x="906" y="158" width="192" height="30" rx="6" fill="#16181D" stroke="#2E3238"/><text x="918" y="177">Key Vault</text>
+              <rect x="906" y="196" width="192" height="30" rx="6" fill="#16181D" stroke="#2E3238"/><text x="918" y="215">Service Bus</text>
+              <rect x="906" y="234" width="192" height="30" rx="6" fill="#16181D" stroke="#2E3238"/><text x="918" y="253">Cosmos / Redis</text>
+            </g>
+            <text x="906" y="288" font-size="8.5" font-family="monospace" fill="#6C7079">公网访问：Disabled</text>
+            <text x="906" y="304" font-size="8.5" font-family="monospace" fill="#6C7079">privatelink.*.core...</text>
+            <text x="906" y="320" font-size="8.5" font-family="monospace" fill="#6C7079">DNS 区域自动注册</text>
+
+            <line x1="829" y1="176" x2="887" y2="176" stroke="#48D1A0" stroke-width="1.4" marker-end="url(#b3)"/>
+            <text x="848" y="170" font-size="8" font-family="monospace" fill="#48D1A0">PE</text><text x="848" y="184" font-size="8" font-family="monospace" fill="#48D1A0">443</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>图 5-1　Hub-Spoke 拓扑与私有端点接入</figcaption>
+    </figure>
+
+    <h3>5.3 NSG 规则（子网级）</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>子网</th><th>方向</th><th>优先级</th><th>源 / 目标</th><th>端口</th><th>动作</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="3"><code>snet-app</code></td><td>Inbound</td><td class="num-td">100</td><td>Internet</td><td class="num-td">443</td><td><span class="tag g">Allow</span></td><td>App Service 前置入口（若启用 Front Door 则改为其服务标签）</td></tr>
+          <tr><td>Inbound</td><td class="num-td">200</td><td>VirtualNetwork</td><td class="num-td">443</td><td><span class="tag g">Allow</span></td><td>内部调用 / 健康探测</td></tr>
+          <tr><td>Outbound</td><td class="num-td">100</td><td>Storage / Sql / ServiceBus / AzureKeyVault</td><td class="num-td">443</td><td><span class="tag g">Allow</span></td><td>服务标签出站；实际命中 PE 私网 IP</td></tr>
+          <tr><td rowspan="2"><code>snet-pe</code></td><td>Inbound</td><td class="num-td">100</td><td>10.20.1.0/24</td><td class="num-td">443</td><td><span class="tag g">Allow</span></td><td>仅允许来自应用子网</td></tr>
+          <tr><td>Outbound</td><td class="num-td">4000</td><td>*</td><td class="num-td">*</td><td><span class="tag r">Deny</span></td><td>PE 子网不需要主动出网</td></tr>
+          <tr><td rowspan="2"><code>snet-mgmt</code></td><td>Inbound</td><td class="num-td">100</td><td>AzureBastionSubnet</td><td class="num-td">3389, 22</td><td><span class="tag g">Allow</span></td><td>仅经 Bastion 登录，无公网 RDP/SSH</td></tr>
+          <tr><td>Outbound</td><td class="num-td">4000</td><td>Internet</td><td class="num-td">*</td><td><span class="tag r">Deny</span></td><td>出网走 Hub 防火墙 / 显式放行</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <div class="ct">教学要点：NSG 是「有状态」的</div>
+      <p>学员最常搞错两件事：① 以为 NSG 按资源顺序生效——实际是<strong>优先级数字最小者先匹配，匹配即停</strong>；② 忘了 NSG 对同一流量的回包自动放行，导致把出站规则写成双向。课堂上可以直接用「有效安全规则」页面点开看合并结果。</p>
+    </div>
+
+    <h3>5.4 Private Endpoint 与私有 DNS</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>目标服务</th><th>子资源</th><th>私有 DNS 区域</th><th>必要性</th></tr></thead>
+        <tbody>
+          <tr><td>Azure SQL Database</td><td><code>sqlServer</code></td><td><code>privatelink.database.windows.net</code></td><td><span class="tag r">必须</span> 核心业务数据</td></tr>
+          <tr><td>Blob Storage</td><td><code>blob</code></td><td><code>privatelink.blob.core.windows.net</code></td><td><span class="tag r">必须</span> 合同原件</td></tr>
+          <tr><td>Key Vault</td><td><code>vault</code></td><td><code>privatelink.vaultcore.azure.net</code></td><td><span class="tag r">必须</span> 凭据面</td></tr>
+          <tr><td>Service Bus</td><td><code>namespace</code></td><td><code>privatelink.servicebus.windows.net</code></td><td><span class="tag a">建议</span> 消息含业务数据</td></tr>
+          <tr><td>Cosmos DB</td><td><code>Sql</code></td><td><code>privatelink.documents.azure.com</code></td><td><span class="tag">可选</span> 审计数据敏感度较低</td></tr>
+          <tr><td>Azure Files</td><td><code>file</code></td><td><code>privatelink.file.core.windows.net</code></td><td><span class="tag">可选</span> 仅演示场景</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Private Endpoint 单价约 <code>$0.01/小时</code>（≈ $7.3/月/个），4 个约 $29/月——这几乎是 PoC 里最容易被忽略的固定成本项，正好用来讲「成本意识要从架构图开始」。</p>
+  </section>
+
+  <!-- ============ 06 ============ -->
+  <section id="s6">
+    <h2><span class="num">06</span>身份、权限与安全</h2>
+
+    <h3>6.1 管理组与订阅层级</h3>
+    <p>对应大纲「订阅 / 管理组 / 资源组的分层组织模型与边界」。策略与权限在<strong>最高可行层级</strong>授予，避免逐资源打补丁。</p>
+    <figure>
+      <div class="fig">
+        <svg viewBox="0 0 1080 320" xmlns="http://www.w3.org/2000/svg">
+          <g font-family="-apple-system,Segoe UI,Microsoft YaHei,sans-serif">
+            <rect x="360" y="6" width="360" height="42" rx="8" fill="#16181D" stroke="#2E3238"/>
+            <text x="378" y="32" font-size="11.5" fill="#E8E9EC" font-weight="600">Tenant Root Group</text>
+            <text x="552" y="32" font-size="9" font-family="monospace" fill="#6C7079">contoso.onmicrosoft.com</text>
+
+            <line x1="540" y1="48" x2="540" y2="62" stroke="#3E4450"/>
+            <line x1="270" y1="62" x2="810" y2="62" stroke="#3E4450"/>
+            <line x1="270" y1="62" x2="270" y2="78" stroke="#3E4450"/>
+            <line x1="540" y1="62" x2="540" y2="78" stroke="#3E4450"/>
+            <line x1="810" y1="62" x2="810" y2="78" stroke="#3E4450"/>
+
+            <rect x="150" y="78" width="240" height="44" rx="8" fill="#141A2B" stroke="#26356B"/>
+            <text x="166" y="98" font-size="11" fill="#C9D3FF" font-weight="600">MG-Platform</text>
+            <text x="166" y="113" font-size="8.5" font-family="monospace" fill="#7E8AAE">共享服务 / Hub / 监控</text>
+
+            <rect x="420" y="78" width="240" height="44" rx="8" fill="#16181D" stroke="#2E3238"/>
+            <text x="436" y="98" font-size="11" fill="#E8E9EC" font-weight="600">MG-LandingZones</text>
+            <text x="436" y="113" font-size="8.5" font-family="monospace" fill="#6C7079">业务工作负载</text>
+
+            <rect x="690" y="78" width="240" height="44" rx="8" fill="#101318" stroke="#23262C"/>
+            <text x="706" y="98" font-size="11" fill="#C3C6CC" font-weight="600">MG-Sandbox</text>
+            <text x="706" y="113" font-size="8.5" font-family="monospace" fill="#6C7079">实验 / 学员练习</text>
+
+            <!-- children of LandingZones -->
+            <line x1="540" y1="122" x2="540" y2="136" stroke="#3E4450"/>
+            <line x1="441" y1="136" x2="639" y2="136" stroke="#3E4450"/>
+            <line x1="441" y1="136" x2="441" y2="152" stroke="#3E4450"/>
+            <line x1="639" y1="136" x2="639" y2="152" stroke="#3E4450"/>
+
+            <rect x="352" y="152" width="178" height="48" rx="8" fill="#16181D" stroke="#2E3238"/>
+            <text x="366" y="172" font-size="10.5" fill="#E8E9EC" font-weight="600">MG-Prod</text>
+            <text x="366" y="188" font-size="8.5" font-family="monospace" fill="#6C7079">sub-com-prod</text>
+
+            <rect x="550" y="152" width="178" height="48" rx="8" fill="#16181D" stroke="#2E3238"/>
+            <text x="564" y="172" font-size="10.5" fill="#E8E9EC" font-weight="600">MG-NonProd</text>
+            <text x="564" y="188" font-size="8.5" font-family="monospace" fill="#6C7079">sub-com-dev / sub-com-test</text>
+
+            <!-- policy panel -->
+            <rect x="40" y="218" width="1000" height="58" rx="9" fill="#0F1216" stroke="#23262C"/>
+            <text x="58" y="240" font-size="9.5" font-family="monospace" fill="#6E8BFF" letter-spacing="1">INHERITED POLICY · 在 MG 层一次性下发</text>
+            <text x="58" y="262" font-size="10" fill="#8D919B">允许的区域白名单 · 必需标签（env / costCenter / owner）· 生产禁公共 IP · 强制诊断设置 · 存储账户禁用公共网络</text>
+
+            <text x="40" y="298" font-size="9" font-family="monospace" fill="#6C7079">权限自顶向下继承；拒绝优先于允许；例外用排除项（NotScopes）而非降低整体严格度</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>图 6-1　管理组层级与策略继承</figcaption>
+    </figure>
+
+    <h3>6.2 RBAC 角色分配矩阵（最小权限）</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>对象</th><th>类型</th><th>作用域</th><th>角色</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>平台管理员</td><td>用户组</td><td>MG-Platform</td><td><code>Contributor</code> + <code>User Access Administrator</code></td><td>经 PIM 按需激活，最长 4 小时</td></tr>
+          <tr><td>应用运维（Ops）</td><td>用户组</td><td><code>rg-com-poc-eastasia</code></td><td><code>Contributor</code> + <code>Monitoring Contributor</code></td><td>可重启/改配置，不可改权限</td></tr>
+          <tr><td>应用开发（Dev）</td><td>用户组</td><td>dev 资源组</td><td><code>Website Contributor</code> + <code>SQL DB Contributor</code></td><td>生产环境仅 <code>Reader</code></td></tr>
+          <tr><td>安全运营</td><td>用户组</td><td>订阅</td><td><code>Security Reader</code> + <code>Key Vault Reader</code></td><td>看告警与密钥元数据，不可读密钥值</td></tr>
+          <tr><td>审计 / 财务</td><td>用户组</td><td>订阅</td><td><code>Reader</code> + <code>Cost Management Reader</code></td><td>账单与成本分析只读</td></tr>
+          <tr><td>API 应用身份</td><td>托管标识（系统）</td><td>各数据资源</td><td><code>Key Vault Secrets User</code> · <code>Storage Blob Data Contributor</code> · <code>Service Bus Data Sender</code> · SQL <code>db_datareader/writer</code></td><td>无密码，随资源生命周期回收</td></tr>
+          <tr><td>Functions 身份</td><td>托管标识（系统）</td><td>各数据资源</td><td><code>Storage Blob Data Contributor</code> · <code>Service Bus Data Receiver</code> · <code>Key Vault Secrets User</code></td><td>仅消费队列 + 写合同容器</td></tr>
+          <tr><td>CI/CD 流水线</td><td>服务主体 + 联合凭据（OIDC）</td><td>资源组</td><td><code>Website Contributor</code></td><td>不落地客户端密钥，避免长期凭据</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout ok">
+      <div class="ct">课堂金句</div>
+      <p>「<strong>能给资源组就别给订阅，能用内置角色就别写自定义角色，能用托管标识就别发密钥。</strong>」这三句话可以覆盖 80% 的 RBAC 现实问题。</p>
+    </div>
+    <div class="callout">
+      <div class="ct">别把业务权限塞进 RBAC</div>
+      <p>谁能审批某个订单，是<b>业务规则</b>，存在 <code>ApprovalTask</code> 与角色表里，由应用层代码校验；Azure RBAC 管的是「谁能配置这套系统」。两者混用会导致每次组织架构调整都要重发角色分配，还会让审批人被迫拿到不必要的云资源权限——这是权限治理里最常见的设计错位。本系统的审批人不持有任何 Azure 角色。</p>
+    </div>
+
+    <h3>6.3 安全控制矩阵</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>控制域</th><th>措施</th><th>落点</th><th>验证方式</th></tr></thead>
+        <tbody>
+          <tr><td>身份</td><td>条件访问（MFA + 合规设备）、PIM 临时提权、禁用遗留认证</td><td>Entra ID</td><td>登录日志 / 风险报告</td></tr>
+          <tr><td>网络</td><td>数据面全私有、公网访问关闭、Bastion 替代跳板公网 IP</td><td>PE / NSG / Storage 防火墙</td><td><code>nslookup</code> 解析到 10.20.2.x</td></tr>
+          <tr><td>数据静态加密</td><td>TDE（SQL）、SSE（Storage）、Key Vault 托管密钥（可选 CMK）</td><td>各数据服务</td><td>门户加密页 / CLI 查询</td></tr>
+          <tr><td>数据传输</td><td>强制 TLS 1.2+、<code>Secure transfer required</code>、内部走私网</td><td>Storage / SQL / App Service</td><td>策略合规检查</td></tr>
+          <tr><td>不可篡改</td><td>Blob 容器级不可变策略（时间保留 10 年）+ 版本控制 + 软删除</td><td>Storage</td><td>尝试删除被拒</td></tr>
+          <tr><td>凭据</td><td>Key Vault RBAC 模式、无应用密钥、轮换策略</td><td>Key Vault</td><td>访问策略页 / 审计日志</td></tr>
+          <tr><td>态势</td><td>Defender for Cloud（CSPM 免费层 + 关键资源 Defender 计划）</td><td>订阅</td><td>安全评分变化</td></tr>
+          <tr><td>合规基线</td><td>Azure Policy：区域限制、必需标签、禁公网 IP、强制诊断设置</td><td>管理组</td><td>合规仪表盘</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 07 ============ -->
+  <section id="s7">
+    <h2><span class="num">07</span>数据与集成设计</h2>
+
+    <h3>7.1 关系模型（Azure SQL）</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>表</th><th>关键字段</th><th>索引 / 约束</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>Customer</code></td><td>CustomerId, Name, TaxId, CreditLimit, Status</td><td>UQ(TaxId)</td><td>缓存热点，Redis 首选对象</td></tr>
+          <tr><td><code>Product</code></td><td>ProductId, Sku, Name, UnitPrice, Currency</td><td>UQ(Sku)</td><td>价格变更需留版本历史</td></tr>
+          <tr><td><code>Order</code></td><td>OrderId, CustomerId, Status, TotalAmount, Currency, Terms, RowVersion</td><td>IX(CustomerId, CreatedAt) · IX(Status)</td><td><code>RowVersion</code> 做乐观并发</td></tr>
+          <tr><td><code>OrderLine</code></td><td>OrderId, LineNo, ProductId, Qty, UnitPrice, Amount</td><td>PK(OrderId, LineNo)</td><td>金额合计由应用层校验，不用触发器</td></tr>
+          <tr><td><code>Contract</code></td><td>ContractId, OrderId, BlobPath, Version, Sha256, ImmutableUntil, Status</td><td>IX(OrderId) · UQ(BlobPath)</td><td>数据库只存指针 + 摘要</td></tr>
+          <tr><td><code>ApprovalTask</code></td><td>TaskId, OrderId, Level, ApproverUpn, Decision, DecidedAt, Comment</td><td>IX(OrderId, Level)</td><td>与 Logic Apps 运行实例 ID 关联</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="kv">
+      <dt>并发</dt><dd>订单编辑用乐观并发（<code>RowVersion</code>），不做悲观锁——审批周期以小时计，锁必然超时</dd>
+      <dt>幂等</dt><dd>提交与审批回调都带 <code>Idempotency-Key</code>，重复请求返回首次结果，防止 Service Bus 至少一次投递造成重复合同</dd>
+      <dt>连接</dt><dd>App Service 启用连接池；Functions 用静态客户端；不启用 SQL 弹性池（PoC 单库无收益）</dd>
+    </div>
+
+    <h3>7.2 存储设计：容器、层级与 WORM</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>容器</th><th>内容</th><th>冗余</th><th>访问层</th><th>策略</th></tr></thead>
+        <tbody>
+          <tr><td><code>contracts-active</code></td><td>生成中 / 待归档的 PDF 与预览</td><td>GRS</td><td>Hot</td><td>软删除 30 天；90 天后转 Cool</td></tr>
+          <tr><td><code>contracts-archive</code></td><td>已归档合同原件（终态）</td><td>GRS</td><td>Hot → Cool</td><td><b>不可变策略 3650 天</b>；版本控制开启</td></tr>
+          <tr><td><code>templates</code></td><td>合同模板、条款库</td><td>LRS</td><td>Hot</td><td>版本化，仅发布流程可写</td></tr>
+          <tr><td><code>attachments</code></td><td>订单附件、扫描件</td><td>LRS</td><td>Cool</td><td>180 天后删除</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warn">
+      <div class="ct">WORM 的三个实操坑（课堂必讲）</div>
+      <p class="tight"><strong>① 只能加不能减：</strong>保留期一旦设定，只允许延长不允许缩短；策略锁定（Locked）后连删除策略都不行——所以演示环境务必用 <code>Unlocked</code> 状态。</p>
+      <p class="tight"><strong>② 与归档层冲突：</strong>不可变数据可以在 Hot/Cool/Archive 之间移动层级，但 Archive 层上的读取需先解冻，合规取证的 SLA 要提前对齐。</p>
+      <p><strong>③ 容器级 vs 版本级：</strong>本设计用容器级（覆盖所有对象，更适合法务归档）；版本级适合混合内容容器。</p>
+    </div>
+
+    <h3>7.3 集成拓扑：Topic + Queue</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>实体</th><th>类型</th><th>发布者</th><th>订阅者 / 消费者</th><th>关键配置</th></tr></thead>
+        <tbody>
+          <tr><td><code>order-events</code></td><td>Topic</td><td>API</td><td><code>sub-audit</code> → Cosmos；<code>sub-notify</code> → 通知；<code>sub-billing</code> → 计费（扩展点）</td><td>重复检测 10 分钟；消息 TTL 14 天</td></tr>
+          <tr><td><code>contract-jobs</code></td><td>Queue</td><td>API / Logic Apps</td><td>Functions（PDF 渲染）</td><td>最大投递 5；死信；<code>MaxConcurrentCalls=1</code> 保证同一订单串行</td></tr>
+          <tr><td><code>notification-jobs</code></td><td>Queue</td><td>Functions / Logic Apps</td><td>Functions（ACS 邮件 / IM Webhook）</td><td>指数退避重试；死信告警</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>为什么 Topic 而不是三个 Queue：</strong>新增订阅方（如未来的计费系统）时，发布侧代码零改动。这是课堂上讲「发布-订阅 vs 点对点」的最短路径示例。</p>
+
+    <h3>7.4 端到端时序（Approved 之后的异步链路）</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>#</th><th>参与方</th><th>动作</th><th>失败处理</th></tr></thead>
+        <tbody>
+          <tr><td class="num-td">1</td><td>API</td><td>审批回调：<code>InReview → Approved</code>，写 DB，向 <code>contract-jobs</code> 投递作业</td><td>DB 与消息不一致 → 用 Outbox 表补偿</td></tr>
+          <tr><td class="num-td">2</td><td>Functions</td><td>取模板 + 订单数据，渲染 PDF，上传 <code>contracts-active</code></td><td>渲染异常 → 重试 5 次 → 死信 + 告警</td></tr>
+          <tr><td class="num-td">3</td><td>Functions</td><td>OCR 回读 PDF 关键字段（金额、客户名、日期）与 DB 比对</td><td>不一致 → 置 <code>GenerateFailed</code>，人工复核</td></tr>
+          <tr><td class="num-td">4</td><td>Functions</td><td>写 <code>Contract</code> 记录（BlobPath + SHA256），状态 → <code>Generated</code></td><td>幂等键去重，避免重复合同</td></tr>
+          <tr><td class="num-td">5</td><td>Functions</td><td>复制到 <code>contracts-archive</code>（不可变容器），写审计事件，状态 → <code>Archived</code></td><td>归档失败保持 <code>Generated</code>，由定时任务补偿</td></tr>
+          <tr><td class="num-td">6</td><td>Functions</td><td>投递通知作业 → 邮件 / IM</td><td>通知失败不影响主流程状态</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><code>SHA256</code> 的作用值得单独讲一分钟：它让「归档后的合同」具备可验证的完整性证明——日后任何一方质疑文件被改动，重算摘要即可自证。</p>
+
+    <h3>7.5 审批交互设计（Web 审批页 + 回调编排）</h3>
+    <div class="callout warn">
+      <div class="ct">约束变更：不使用 Power Platform</div>
+      <p>客户未采购 Power Platform / Microsoft 365 许可，因此<b>不使用 Logic Apps 的 Approvals 连接器、Power Automate 审批流、Teams 审批卡片</b>。审批交互收敛到系统自有的 Web 门户，Logic Apps 只承担编排与「等人」。附带收益：审批数据不出本系统、不依赖第三方订阅、权限模型由应用自己掌控。</p>
+    </div>
+
+    <p>这里替换的是「人在哪里点按钮」，不是「流程怎么走」。Logic Apps 用内置的 <code>Request / Wait for an HTTP request</code>（Callback）模式实现「等人」这一步：</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>#</th><th>参与方</th><th>动作</th><th>关键约束</th></tr></thead>
+        <tbody>
+          <tr><td class="num-td">1</td><td>API</td><td>订单提交后调用 Logic Apps 的 HTTP 触发端点，传入订单号、金额、条款类型</td><td>托管标识取令牌调用；附 <code>correlationId</code></td></tr>
+          <tr><td class="num-td">2</td><td>Logic Apps</td><td>按金额 / 条款判定审批层级，生成签名回调 URL，进入等待动作（timeout 48h）</td><td>回调 URL 由平台生成，一次性、带签名</td></tr>
+          <tr><td class="num-td">3</td><td>API</td><td>创建 <code>ApprovalTask</code>，把回调 URL 加密存入 Key Vault（或加密列），仅 API 身份可读</td><td>浏览器永远拿不到回调 URL</td></tr>
+          <tr><td class="num-td">4</td><td>Functions</td><td>投递提醒邮件（ACS Email），正文只含「您有 1 条待办」+ 门户链接</td><td>邮件仅提醒，不作审批凭证</td></tr>
+          <tr><td class="num-td">5</td><td>审批人</td><td>登录门户 → 待办列表 → 订单详情 → 批准 / 驳回 + 意见</td><td>Entra ID 登录；服务端校验业务角色与层级匹配</td></tr>
+          <tr><td class="num-td">6</td><td>API</td><td>写审批记录 → 从 Key Vault 取回调 URL → 调用回调 → 工作流恢复</td><td>幂等键去重；重复回调返回 409</td></tr>
+          <tr><td class="num-td">7</td><td>Logic Apps</td><td>还有下一级 → 回到步骤 2；否则汇总结果并回调 API 更新订单状态</td><td>超时分支：升级至上级或按策略转交</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>安全与可运维性要点</h4>
+    <ul>
+      <li><strong>回调 URL 是服务端凭据，不是链接：</strong>它等价于「批准这个订单」的能力，泄露即越权。因此只存 Key Vault、只由 API 调用，绝不回传前端。</li>
+      <li><strong>回调端点加 IP 限制：</strong>Logic Apps 侧配置「允许的入站 IP」，仅放行 NAT Gateway 出口 IP，形成签名 + 来源 IP 双因子。</li>
+      <li><strong>业务权限 ≠ Azure RBAC：</strong>审批人不需要任何 Azure 角色，审批资格由应用内角色表决定；Azure RBAC 只管「谁能改这套系统」。</li>
+      <li><strong>待办中心是唯一事实来源：</strong>邮件丢失只影响提醒，不影响流程；审批人随时可在门户看到全部待办。</li>
+      <li><strong>可替换性：</strong>若客户未来采购 Power Platform，只需把「等待回调 + 通知」两段换成 Approvals 连接器，编排主干不变——这是把交互与编排分离的直接收益。</li>
+    </ul>
+
+    <div class="callout">
+      <div class="ct">课堂讲法</div>
+      <p>这一步最适合讲「<strong>PaaS 的能力边界与许可成本</strong>」：Logic Apps 本身不需要 Power Platform 许可，需要许可的是它调用的连接器。学员在真实项目里做选型时，往往只看了服务单价，没看连接器背后的订阅依赖——这类问题要到上线前才暴露。</p>
+    </div>
+  </section>
+
+  <!-- ============ 08 ============ -->
+  <section id="s8">
+    <h2><span class="num">08</span>可观测性与灾备</h2>
+
+    <h3>8.1 监控分层</h3>
+    <div class="grid g3">
+      <div class="card"><div class="k">基础设施指标</div><div class="v" style="font-size:13px">平台自动采集</div><div class="d">CPU / 内存 / DTU / 连接数 / 队列深度 / 存储延迟，保留 93 天</div></div>
+      <div class="card"><div class="k">应用性能</div><div class="v" style="font-size:13px">App Insights + OpenTelemetry</div><div class="d">请求率、失败率、P95、依赖调用、跨服务关联 ID</div></div>
+      <div class="card"><div class="k">业务指标</div><div class="v" style="font-size:13px">自定义事件</div><div class="d">订单提交量、审批平均时长、合同生成成功率、归档延迟</div></div>
+    </div>
+
+    <h3>8.2 告警规则（课上可直接点开演示）</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>告警</th><th>信号</th><th>阈值</th><th>严重度</th><th>动作组</th></tr></thead>
+        <tbody>
+          <tr><td>API 错误率升高</td><td>App Insights 失败请求</td><td>&gt; 5% 持续 5 分钟</td><td><span class="tag r">Sev1</span></td><td>邮件 + IM</td></tr>
+          <tr><td>响应时间劣化</td><td>P95 服务端耗时</td><td>&gt; 1500ms 持续 10 分钟</td><td><span class="tag a">Sev2</span></td><td>邮件</td></tr>
+          <tr><td>SQL DTU 饱和</td><td>DTU 百分比</td><td>&gt; 85% 持续 15 分钟</td><td><span class="tag a">Sev2</span></td><td>邮件 + 工单</td></tr>
+          <tr><td>合同作业积压</td><td>Service Bus 活动消息数</td><td>&gt; 50 持续 15 分钟</td><td><span class="tag a">Sev2</span></td><td>邮件</td></tr>
+          <tr><td>死信队列非空</td><td>DeadLetter 消息数</td><td>&gt; 0</td><td><span class="tag r">Sev1</span></td><td>IM + 工单</td></tr>
+          <tr><td>Functions 执行失败</td><td>失败计数</td><td>&gt; 3 次 / 10 分钟</td><td><span class="tag a">Sev2</span></td><td>邮件</td></tr>
+          <tr><td>存储 5xx</td><td>事务错误率</td><td>&gt; 1%</td><td><span class="tag r">Sev1</span></td><td>邮件 + IM</td></tr>
+          <tr><td>预算阈值</td><td>Cost Management</td><td>50% / 80% / 100%</td><td><span class="tag b">Info</span></td><td>财务邮件</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.3 备份与灾难恢复</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>对象</th><th>机制</th><th>保留</th><th>RTO / RPO</th><th>备注</th></tr></thead>
+        <tbody>
+          <tr><td>Azure SQL</td><td>自动备份（完整/差异/日志）</td><td>短期 7–35 天 + 长期保留（可选 7 年）</td><td>~1h / 5–10min</td><td>地理还原需启用 Geo-Restore（默认开启）</td></tr>
+          <tr><td>Blob（合同）</td><td>GRS + 软删除 + 版本控制</td><td>软删除 30 天</td><td>~0 / 分钟级</td><td>WORM 对象不可被覆盖，天然抗误删</td></tr>
+          <tr><td>Storage（账户级）</td><td>Azure Backup for Blobs（可选）</td><td>策略定义</td><td>~1h / 日级</td><td>用于非不可变容器</td></tr>
+          <tr><td>App Service / Functions</td><td>代码在 Git + IaC，配置在 Bicep 参数</td><td>版本库永久</td><td>~30min / 0</td><td>PaaS 无状态，重建优于备份</td></tr>
+          <tr><td>演示 VM</td><td>Azure Backup（恢复服务保管库）</td><td>30 天 / 每日</td><td>~2h / 24h</td><td>课堂演示 Backup 与还原流程</td></tr>
+          <tr><td>区域级故障</td><td>Azure Site Recovery（VM 复制到次要区域）</td><td>—</td><td>~4h / 15min</td><td>PoC 仅演示配置与测试故障转移，不常开（成本）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <div class="ct">讲清楚 RTO 与 RPO 的区别</div>
+      <p>RTO 是「多久能恢复业务」，RPO 是「会丢多少数据」。合同系统的 RPO 必须接近 0（不能丢已签合同），因此 SQL 依赖日志备份 + Blob 依赖多副本同步复制；而 RTO 可以放宽到数小时——这个不对称是架构设计的起点，不是运维的补救。</p>
+    </div>
+  </section>
+
+  <!-- ============ 09 ============ -->
+  <section id="s9">
+    <h2><span class="num">09</span>成本模型</h2>
+
+    <h3>9.1 价格锚点（East Asia 零售价，API 实测）</h3>
+    <p>下列单价来自 Azure Retail Prices API 实时查询，用于课堂演算；正式报价请以官网价格计算器为准。</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>服务</th><th>SKU</th><th>单价</th><th>折算月成本</th></tr></thead>
+        <tbody>
+          <tr><td>App Service（Linux）</td><td>B1</td><td class="num-td">$0.020 / 小时</td><td class="num-td">≈ $14.6</td></tr>
+          <tr><td>App Service（Linux）</td><td>S1</td><td class="num-td">$0.095 / 小时</td><td class="num-td">≈ $69.4</td></tr>
+          <tr><td>Azure SQL Database</td><td>S0（10 DTU）</td><td class="num-td">$0.4839 / 天</td><td class="num-td">≈ $14.5</td></tr>
+          <tr><td>Service Bus</td><td>Standard 基础单元</td><td class="num-td">$10.0 / 月</td><td class="num-td">$10.0</td></tr>
+          <tr><td>Blob Storage</td><td>Hot LRS 数据存储</td><td class="num-td">$0.0221 / GB·月</td><td class="num-td">按量</td></tr>
+          <tr><td>Azure Functions</td><td>Consumption</td><td class="num-td">$0.20 / 百万次 · $0.000016 / GB·s</td><td class="num-td">&lt; $2</td></tr>
+          <tr><td>Logic Apps</td><td>Consumption（仅内置操作）</td><td class="num-td">$0.00003 / 操作</td><td class="num-td">&lt; $1</td></tr>
+          <tr><td>ACS Email</td><td>Email · 按量</td><td class="num-td">$0.00025 / 封</td><td class="num-td">&lt; $0.5</td></tr>
+          <tr><td>Log Analytics</td><td>Pay-as-you-go</td><td class="num-td">$2.30 / GB 摄入 · $0.18 / GB·月 保留</td><td class="num-td">$3–8</td></tr>
+          <tr><td>Key Vault</td><td>Standard</td><td class="num-td">$0.03 / 万次操作</td><td class="num-td">&lt; $1</td></tr>
+          <tr><td>Private Endpoint</td><td>—</td><td class="num-td">$0.01 / 小时</td><td class="num-td">≈ $7.3 / 个</td></tr>
+          <tr><td>出站流量</td><td>Internet Egress</td><td class="num-td">$0.06–0.075 / GB</td><td class="num-td">按量</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>9.2 PoC 月度估算</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>阶段</th><th>包含资源</th><th>估算月成本</th><th>课堂用途</th></tr></thead>
+        <tbody>
+          <tr><td><b>M0 骨架</b></td><td>App Service B1 · SQL S0 · Storage · KV · Log Analytics</td><td class="num-td">≈ $40–50</td><td>第 2/7 模块</td></tr>
+          <tr><td><b>M1 业务闭环</b></td><td>M0 + Service Bus · Functions · Logic Apps · Cosmos · Redis</td><td class="num-td">≈ $70–90</td><td>第 7 模块主线演示</td></tr>
+          <tr><td><b>M2 治理</b></td><td>M1 + 4×Private Endpoint · Bastion（按需）· 演示 VM + Backup</td><td class="num-td">≈ $110–150</td><td>第 3/5/6/8/9 模块</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid g3">
+      <div class="card accent"><div class="k">按小时看</div><div class="v">$0.20–0.35</div><div class="d">全量 M2 常开约 $0.35/小时；两天课程总成本约 $5–8</div></div>
+      <div class="card"><div class="k">最贵的固定项</div><div class="v">$29<span style="font-size:12px">/月</span></div><div class="d">4 个 Private Endpoint 的固定费用，比 SQL 还贵</div></div>
+      <div class="card"><div class="k">最容易失控</div><div class="v">日志</div><div class="d">Log Analytics 按摄入计费，调试期开 Verbose 会翻几倍</div></div>
+    </div>
+
+    <h3>9.3 成本治理四件套</h3>
+    <ul>
+      <li><strong>标签策略</strong>：<code>env</code>（poc/dev/prod）、<code>costCenter</code>、<code>owner</code>、<code>app=com</code>。在管理组层用 Policy <em>Require tag</em>，缺标签拒绝创建——这比事后催补标签有效得多。</li>
+      <li><strong>预算与告警</strong>：$150/月，50% / 80% / 100% 三档；100% 时自动触发清理脚本（可选演示）。</li>
+      <li><strong>成本分析视角</strong>：按 <code>app</code> 标签分组看服务构成、按资源看趋势、按「服务」看 PaaS 与 IaaS 比例。</li>
+      <li><strong>优化动作</strong>：Advisor 建议 → 关闭空闲 Redis → SQL 降级或暂停 → 删除演示 VM → 保留 Storage（数据）与 IaC（可重建）。</li>
+    </ul>
+    <p>课堂演示顺序建议：<code>成本分析 → 按标签分组 → 导出 → 预算 → Advisor</code>，四步 5 分钟，比讲 20 分钟理论有效。</p>
+  </section>
+
+  <!-- ============ 10 ============ -->
+  <section id="s10">
+    <h2><span class="num">10</span>Well-Architected 评估</h2>
+    <p>按大纲要求，用 WAF 五支柱对本设计做一次自评。评分的意义不在分数，而在<strong>明确指出哪些是 PoC 的有意简化</strong>——这本身就是学员最需要的判断力。</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>支柱</th><th>评分</th><th>已落地</th><th>PoC 简化项 / 生产补齐</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>可靠性</b></td><td><span class="tag a">★★★☆☆</span></td>
+            <td>平台 SLA 99.9%+、SQL 自动备份 + 地理还原、Blob GRS、队列重试与死信、无状态可重建</td>
+            <td>单区域；未启用 SQL 区域冗余、App Service 多区域主动-主动、Cosmos 多区域写</td>
+          </tr>
+          <tr>
+            <td><b>安全性</b></td><td><span class="tag g">★★★★☆</span></td>
+            <td>全私有数据面、托管标识零密钥、WORM、Defender、Policy、最小权限 RBAC、PIM</td>
+            <td>未启用 CMK / 客户托管 HSM；未做私有 Link 到第三方；条件访问策略为演示级</td>
+          </tr>
+          <tr>
+            <td><b>成本优化</b></td><td><span class="tag g">★★★★☆</span></td>
+            <td>PaaS + Serverless、按需 SKU、预算告警、标签归集、可整体销毁</td>
+            <td>PE 固定费用占比高；未用预留实例 / 节省计划（长期运行时应评估 1 年承诺）</td>
+          </tr>
+          <tr>
+            <td><b>卓越运营</b></td><td><span class="tag g">★★★★☆</span></td>
+            <td>IaC（Bicep）+ 参数化环境、命名规范、统一日志、告警即代码、部署槽灰度</td>
+            <td>CI/CD 仅演示主干；未做自动化合规扫描与漂移检测</td>
+          </tr>
+          <tr>
+            <td><b>性能效率</b></td><td><span class="tag g">★★★★☆</span></td>
+            <td>同步/异步分离、Redis 缓存热点、Service Bus 削峰、PDF 渲染并行、按队列深度自动缩放</td>
+            <td>未做负载测试；SQL 索引仅覆盖主要查询；大合同（&gt;20MB）未做分片上传优化</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>10.1 三个必须向客户说明的风险</h3>
+    <div class="grid g3">
+      <div class="card"><div class="k">RISK-01</div><div class="v" style="font-size:13.5px">单区域故障</div><div class="d">当前 RTO 4h 依赖手工地理还原。若合同签署有法定时限，需上 Zone Redundant + 多区域主动-被动</div></div>
+      <div class="card"><div class="k">RISK-02</div><div class="v" style="font-size:13.5px">OCR 准确率</div><div class="d">OCR 仅做字段回读校验，不作为唯一判定；一致率低时应降级为人工复核而非阻断流程</div></div>
+      <div class="card"><div class="k">RISK-03</div><div class="v" style="font-size:13.5px">通知可达性</div><div class="d">审批在 Web 门户完成，邮件仅作提醒。若邮件通道受限，需在门户加待办红点与每日摘要，避免审批人漏办</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 11 ============ -->
+  <section id="s11">
+    <h2><span class="num">11</span>与培训模块的映射</h2>
+    <p>这张表是备课用的「教学索引」：每个课程模块讲什么、在架构里对应哪块、现场点什么。</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>模块</th><th>时长</th><th>架构落点</th><th>现场演示动作</th></tr></thead>
+        <tbody>
+          <tr><td><b>① 课程导览与案例背景</b></td><td class="num-td">15m</td><td>图 3-1 总览 + 图 2-1 流程</td><td>先讲业务痛点（合同散落、审批靠邮件、归档不可追溯），再抛架构全景图</td></tr>
+          <tr><td><b>② 系统架构设计</b></td><td class="num-td">45m</td><td>第 3 章三层映射 + 第 4 章 ADR + 第 10 章 WAF</td><td>门户展示资源组树状结构；对照 ADR 表逐条问「你会怎么选」</td></tr>
+          <tr><td><b>③ 网络设计</b></td><td class="num-td">60m</td><td>第 5 章 VNet / NSG / PE / Hub-Spoke</td><td>子网页看 IP 规划 → NSG「有效安全规则」→ PE 连接状态 → 在 VM 上 <code>nslookup</code> 验证私网解析</td></tr>
+          <tr><td><b>④ 安全规划</b></td><td class="num-td">30m</td><td>第 6 章 6.3 控制矩阵 + Key Vault</td><td>Key Vault 看密钥元数据与访问日志 → Defender 安全评分 → Policy 合规页</td></tr>
+          <tr><td><b>⑤ 订阅与租户初始化</b></td><td class="num-td">30m</td><td>第 6 章 6.1 管理组 + 标签策略</td><td>管理组层级图 → 成本分析按 <code>app</code> 标签分组 → 展示「缺标签拒绝创建」的 Policy 效果</td></tr>
+          <tr><td><b>⑥ 角色分配</b></td><td class="num-td">30m</td><td>第 6 章 6.2 RBAC 矩阵</td><td>IAM 页逐个角色分配 → 切到托管标识看其 KV 权限 → CLI <code>az role assignment list</code> 验证</td></tr>
+          <tr><td><b>⑦ 常规组件配置</b></td><td class="num-td">90m</td><td>第 4 章资源清单 + 第 7 章数据设计</td><td>主力模块：Bicep 分段部署 App Service / SQL / Storage / Service Bus，讲 SKU 与冗余选型；现场走一遍「Web 审批页批准 → Logic Apps 回调恢复」</td></tr>
+          <tr><td><b>⑧ 后续管理运维</b></td><td class="num-td">30m</td><td>第 8 章监控 + 备份</td><td>实时打一条告警（手动触发）→ 恢复服务保管库看备份项 → 演示文件级还原</td></tr>
+          <tr><td><b>⑨ 账单查看与成本治理</b></td><td class="num-td">30m</td><td>第 9 章成本模型</td><td>成本分析四步走 → 预算阈值 → Advisor 建议 → 闲置资源清理清单</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <div class="ct">时间分配的现实建议</div>
+      <p>6 小时分两次、每次 3 小时。第一次建议覆盖 ①②③④（约 150 分钟 + 休息），第二次覆盖 ⑤⑥⑦⑧⑨（约 210 分钟，需压缩第 ⑦ 模块的动手时间到 60 分钟，其余 30 分钟只讲关键配置项）。第 ⑦ 模块是唯一需要「边讲边点」的模块，务必提前把资源预部署好——现场等部署会吃掉 20 分钟。</p>
+    </div>
+  </section>
+
+  <!-- ============ 12 ============ -->
+  <section id="s12">
+    <h2><span class="num">12</span>PoC 分期与待确认项</h2>
+
+    <h3>12.1 三步走部署策略</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>阶段</th><th>目标</th><th>包含内容</th><th>部署耗时</th><th>验收标准</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>M0 骨架</b></td><td>系统能跑起来</td>
+            <td>RG、VNet/子网/NSG、App Service Plan + Web + API、SQL + 库 + 种子数据、Storage、Key Vault、Log Analytics + App Insights</td>
+            <td class="num-td">60–75 min</td>
+            <td>浏览器可访问门户，能创建订单并写入 SQL</td>
+          </tr>
+          <tr>
+            <td><b>M1 业务闭环</b></td><td>跑通「下单→审批→归档」</td>
+            <td>Service Bus（Topic/Queue）、Functions（PDF/OCR/通知）、Logic Apps 审批、Blob 容器 + WORM 策略、Cosmos 审计</td>
+            <td class="num-td">60 min</td>
+            <td>提交订单 → 收到提醒 → 在门户批准 → Logic Apps 回调恢复 → 生成 PDF → 归档容器出现不可变文件</td>
+          </tr>
+          <tr>
+            <td><b>M2 治理与运维</b></td><td>让架构「可运营」</td>
+            <td>4×Private Endpoint + 私有 DNS、Azure Policy 基线、预算 + 标签、告警规则、Backup、ASR（可选）</td>
+            <td class="num-td">45 min</td>
+            <td>私网解析生效、Policy 合规率 100%、手动触发告警成功通知</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout ok">
+      <div class="ct">授课策略建议</div>
+      <p class="tight"><strong>课前</strong>把 M0 + M1 全部预部署完毕（不要赌现场网络），并准备一份「一键销毁 + 一键重建」的脚本。</p>
+      <p class="tight"><strong>课中</strong>只做 M2 的现场配置：Private Endpoint、Policy、预算、告警——这些动作 3–5 分钟见效，演示感强且风险低。</p>
+      <p><strong>课后</strong>保留 24–48 小时供客户复盘，随后整体删除资源组（Storage 中的合同数据为演示数据，无需保留）。</p>
+    </div>
+
+    <h3>12.2 待确认的三个决策</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>#</th><th>决策点</th><th>影响</th><th>建议</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="num-td">D1</td><td><b>云环境</b>：Azure Global 还是 Azure China（21Vianet 运营）</td>
+            <td>中国区部分服务版本滞后（如 Logic Apps 部分连接器、Azure Managed Redis、Cosmos Serverless 可用性），架构需替换等价服务</td>
+            <td>若客户使用中国区，第 4 章清单需按「可用性对照表」重列，PoC 部署脚本也要换 endpoint</td>
+          </tr>
+          <tr>
+            <td class="num-td">D2</td><td><b>部署区域</b>：East Asia（香港）还是 Southeast Asia（新加坡）</td>
+            <td>影响延迟、部分 SKU 可用性与价格</td>
+            <td>默认 East Asia；若客户团队在华东，可对比 Southeast Asia 的实际体验</td>
+          </tr>
+          <tr>
+            <td class="num-td">D3</td><td><b>成本上限与保留时长</b></td>
+            <td>决定 M2 是否包含 Bastion 与演示 VM、Redis 是否常开</td>
+            <td>预算 $150/月，课后 48h 销毁；若需长期保留，降到 M1（约 $70–90/月）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>12.3 下一步（PoC 实施）</h3>
+    <ul>
+      <li><strong>IaC 骨架</strong>：Bicep 模块化（<code>network</code> / <code>compute</code> / <code>data</code> / <code>integration</code> / <code>observability</code> / <code>governance</code>），参数文件区分 <code>poc</code> 与 <code>prod</code>。</li>
+      <li><strong>应用代码</strong>：ASP.NET Core Minimal API + Blazor 前端 + 3 个 Functions + 1 个 Logic Apps 工作流定义。</li>
+      <li><strong>种子数据</strong>：20 个客户、50 个产品、30 条订单（覆盖各状态），保证演示时页面不空。</li>
+      <li><strong>演示脚本</strong>：一条完整业务流的操作手册 + 每个模块的「点什么、说什么」提示卡。</li>
+    </ul>
+  </section>
+
+  <div class="foot">
+    COM on Azure · Architecture Design v1.1 · 2026-10-20 · 价格数据取自 Azure Retail Prices API（East Asia，USD，未含税）<br>v1.1 变更：审批交互由 Power Platform Approvals 改为自有 Web 审批页 + Logic Apps 内置 Callback，移除全部 Power Platform / M365 许可依赖
+    <br>本文为设计草案，需结合实际租户策略与合规要求由客户技术负责人确认后进入实施。
+  </div>
+</main>
+</div>
+
+<script>
+  const links = [...document.querySelectorAll('nav a')];
+  const secs = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id));
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  secs.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

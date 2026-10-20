@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>合同订单管理系统（COM）· 模块设计、技术栈与部署方案 v2.1</title>
+<style>
+  :root{
+    --bg:#0B0C0E; --bg-2:#0E1013;
+    --panel:#121418; --panel-2:#16181D; --panel-3:#1B1E24;
+    --line:#23262C; --line-2:#2E3238;
+    --text:#E8E9EC; --text-2:#C3C6CC; --muted:#8D919B; --muted-2:#6C7079;
+    --accent:#6E8BFF; --accent-dim:#243056;
+    --green:#48D1A0; --green-dim:#12332A;
+    --amber:#F5A524; --amber-dim:#382A10;
+    --red:#FF6B6B; --red-dim:#3A1A1A;
+    --purple:#A78BFA; --cyan:#4DD0E1;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14.5px;line-height:1.75;letter-spacing:.01em;-webkit-font-smoothing:antialiased}
+  ::selection{background:#2B3A6B;color:#fff}
+  .shell{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:100vh}
+  aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--line);background:var(--bg-2);padding:26px 18px 40px}
+  aside::-webkit-scrollbar{width:6px}
+  aside::-webkit-scrollbar-thumb{background:#2A2E35;border-radius:3px}
+  .brand{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+  .brand-dot{width:9px;height:9px;border-radius:2px;background:var(--accent);box-shadow:0 0 12px rgba(110,139,255,.7)}
+  .brand-txt{font-size:12.5px;font-weight:600;letter-spacing:.06em;color:var(--text-2)}
+  .brand-sub{font-size:11px;color:var(--muted-2);margin:2px 0 22px;letter-spacing:.04em}
+  nav a{display:block;font-size:12.8px;color:var(--muted);text-decoration:none;padding:5px 9px;border-radius:6px;border-left:2px solid transparent;transition:.15s}
+  nav a:hover{color:var(--text);background:var(--panel-2)}
+  nav a .n{font-family:var(--mono);font-size:10.5px;color:var(--muted-2);margin-right:7px}
+  .nav-group{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#4E535C;margin:16px 0 6px 10px}
+  main{padding:44px 56px 120px;max-width:1120px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--accent);text-transform:uppercase}
+  h1{font-size:33px;line-height:1.28;font-weight:650;letter-spacing:-.02em;margin:14px 0 10px}
+  h1 span{color:var(--muted-2)}
+  .lede{font-size:15.5px;color:var(--text-2);max-width:800px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 4px}
+  .chip{font-family:var(--mono);font-size:11px;color:var(--text-2);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 11px;display:inline-flex;align-items:center;gap:6px}
+  .chip b{color:var(--text);font-weight:600}
+  .chip .dot{width:5px;height:5px;border-radius:50%;background:var(--green)}
+  hr.sep{border:0;border-top:1px solid var(--line);margin:34px 0}
+  section{margin:0 0 54px;scroll-margin-top:24px}
+  h2{font-size:21px;font-weight:600;letter-spacing:-.01em;padding-bottom:11px;border-bottom:1px solid var(--line);margin-bottom:20px;display:flex;align-items:baseline;gap:12px}
+  h2 .num{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:500;letter-spacing:.06em}
+  h3{font-size:15.5px;font-weight:600;margin:26px 0 10px;color:var(--text)}
+  h4{font-size:13px;font-weight:600;margin:18px 0 8px;color:var(--text-2);letter-spacing:.02em}
+  p{margin:0 0 12px;color:var(--text-2)}
+  ul,ol{margin:0 0 14px 20px;color:var(--text-2)}
+  li{margin:4px 0}
+  li::marker{color:var(--muted-2)}
+  strong{color:var(--text);font-weight:600}
+  code{font-family:var(--mono);font-size:12.2px;background:var(--panel-3);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:#C9D3FF}
+  a{color:var(--accent);text-decoration:none}
+  .tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);margin:14px 0 18px;background:var(--panel)}
+  table{border-collapse:collapse;width:100%;font-size:12.9px}
+  th{text-align:left;font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--panel-2);padding:10px 12px;border-bottom:1px solid var(--line-2);white-space:nowrap}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);color:var(--text-2);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:#14171C}
+  td code{font-size:11.6px;white-space:nowrap}
+  .num-td{font-family:var(--mono);font-size:11.8px;color:var(--text);white-space:nowrap}
+  .t-sub{display:block;font-size:11px;color:var(--muted-2);margin-top:2px}
+  .tag{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:1px 7px;border-radius:4px;border:1px solid var(--line-2);color:var(--muted);background:var(--panel-3);white-space:nowrap}
+  .tag.g{color:var(--green);border-color:#1D4A3C;background:var(--green-dim)}
+  .tag.a{color:var(--amber);border-color:#4A3A15;background:var(--amber-dim)}
+  .tag.r{color:var(--red);border-color:#4A2323;background:var(--red-dim)}
+  .tag.b{color:var(--accent);border-color:#26356B;background:var(--accent-dim)}
+  .tag.p{color:var(--purple);border-color:#332A5C;background:#1D1830}
+  .callout{border:1px solid var(--line);border-left:2px solid var(--accent);background:var(--panel);border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0 20px}
+  .callout .ct{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;font-weight:600}
+  .callout p:last-child{margin-bottom:0}
+  .callout.warn{border-left-color:var(--amber)} .callout.warn .ct{color:var(--amber)}
+  .callout.ok{border-left-color:var(--green)} .callout.ok .ct{color:var(--green)}
+  .callout.danger{border-left-color:var(--red)} .callout.danger .ct{color:var(--red)}
+  .grid{display:grid;gap:12px;margin:16px 0 20px}
+  .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px}
+  .card .k{font-family:var(--mono);font-size:10.5px;color:var(--muted-2);letter-spacing:.08em;text-transform:uppercase}
+  .card .v{font-size:19px;font-weight:600;margin:6px 0 2px;letter-spacing:-.02em}
+  .card .d{font-size:11.8px;color:var(--muted);line-height:1.6}
+  .card.accent{border-color:#26356B;background:linear-gradient(180deg,#141A2B 0%,#121418 100%)}
+  /* layer map */
+  .layer{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);padding:12px 14px;margin-bottom:10px;position:relative}
+  .layer-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .layer-h .lb{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted-2);border:1px solid var(--line-2);border-radius:4px;padding:1px 6px}
+  .layer-h .lt{font-size:12.5px;font-weight:600;color:var(--text)}
+  .layer-h .ld{font-size:11.5px;color:var(--muted-2);margin-left:auto;font-family:var(--mono)}
+  .mods{display:grid;gap:8px}
+  .m{background:var(--panel-2);border:1px solid var(--line-2);border-radius:7px;padding:8px 10px}
+  .m .mn{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.06em}
+  .m .mt{font-size:12.3px;font-weight:600;color:var(--text);margin:1px 0 2px}
+  .m .md{font-size:11px;color:var(--muted);line-height:1.5}
+  .m.az .mn{color:var(--cyan)}
+  .m.pf .mn{color:var(--purple)}
+  .arrow{text-align:center;color:#3A3F47;font-size:13px;line-height:1;margin:-2px 0 8px}
+  .steps{counter-reset:s;margin:14px 0 18px}
+  .step{position:relative;padding:0 0 18px 34px;border-left:1px solid var(--line)}
+  .step:last-child{border-left-color:transparent;padding-bottom:0}
+  .step::before{counter-increment:s;content:counter(s);position:absolute;left:-13px;top:0;width:25px;height:25px;border-radius:7px;background:var(--panel-3);border:1px solid var(--line-2);color:var(--accent);font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center}
+  .step .st{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:3px}
+  .step .sd{font-size:12.6px;color:var(--muted);line-height:1.68}
+  .step .sd code{font-size:11.6px}
+  pre{background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:13px 15px;overflow-x:auto;margin:12px 0 16px}
+  pre code{background:none;border:0;padding:0;font-size:12px;line-height:1.72;color:#C7CBD3;white-space:pre}
+  .c-com{color:#5F6672}
+  .c-str{color:#8FD6A8}
+  .c-key{color:#9EB4FF}
+  .foot{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;font-size:11.5px;color:var(--muted-2);font-family:var(--mono)}
+  @media (max-width:980px){
+    .shell{grid-template-columns:1fr}
+    aside{display:none}
+    main{padding:28px 20px 80px}
+    .g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .mods{grid-template-columns:1fr!important}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+<aside>
+  <div class="brand"><div class="brand-dot"></div><div class="brand-txt">COM · 合同订单管理</div></div>
+  <div class="brand-sub">模块设计 / 技术栈 / 部署方案</div>
+  <div class="nav-group">设计</div>
+  <nav>
+    <a href="#s1"><span class="n">01</span>交付策略与设计基线</a>
+    <a href="#s2"><span class="n">02</span>模块划分总览</a>
+    <a href="#s3"><span class="n">03</span>模块详情与接口契约</a>
+    <a href="#s4"><span class="n">04</span>数据模型与状态机</a>
+    <a href="#s5"><span class="n">05</span>技术栈与选型理由</a>
+    <a href="#s6"><span class="n">06</span>关键实现约定</a>
+  </nav>
+  <div class="nav-group">实施</div>
+  <nav>
+    <a href="#s7"><span class="n">07</span>仓库结构与代码地图</a>
+    <a href="#s8"><span class="n">08</span>部署方案</a>
+    <a href="#s9"><span class="n">09</span>环境矩阵与降级策略</a>
+    <a href="#s10"><span class="n">10</span>成本与课堂演示动线</a>
+    <a href="#s11"><span class="n">11</span>风险与交付清单</a>
+    <a href="#s12"><span class="n">12</span>实际部署结果与踩坑记录</a>
+  </nav>
+</aside>
+<main>
+
+<div class="eyebrow">Azure 实战培训 · PoC 实施蓝本</div>
+<h1>合同订单管理系统（COM）<br><span>模块设计、技术栈与部署方案</span></h1>
+<p class="lede">这份文档是架构设计（v1.1）的落地契约：把"图上的 21 个资源"拆成可独立开发、可独立验证的 11 个模块，锁定技术栈，并给出可重复执行的部署路径。目标是在授课现场有一套真实运行、可点击、可解释的系统，而不是幻灯片上的框图。</p>
+<div class="meta">
+  <span class="chip"><span class="dot"></span>版本 <b>v2.1</b></span>
+  <span class="chip"><span class="dot" style="background:var(--green)"></span>已部署 <b>20/20</b></span>
+  <span class="chip">区域 <b>East Asia</b></span>
+  <span class="chip">订阅 <b>Visual Studio Enterprise</b></span>
+  <span class="chip">运行时 <b>.NET 8</b></span>
+  <span class="chip">部署 <b>Bicep + 脚本</b></span>
+  <span class="chip">前置文档 <b>架构设计 v1.1</b></span>
+</div>
+
+<hr class="sep">
+
+<!-- ============ 01 ============ -->
+<section id="s1">
+<h2><span class="num">01</span>交付策略与设计基线</h2>
+
+<p>整件事有三个约束，它们直接决定了后面的每一个取舍：<strong>明天要讲</strong>、<strong>客户现场演示不能崩</strong>、<strong>预算要能说清</strong>。因此本次交付不是"先写完再跑"，而是<strong>本地可跑 → 云端可跑 → 现场可演</strong>三层验证。</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:150px">基线项</th><th>取值</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><b>架构基线</b></td><td>架构设计 v1.1 的 21 项资源清单与三条 ADR 主干</td><td>不新增服务，不删课程点；偏离处必须在此文档登记</td></tr>
+<tr><td><b>业务主线</b></td><td>建单 → 提交 → 多级审批 → 合同 PDF 生成 → WORM 归档 → 通知</td><td>同步链路在"提交"截断，PDF/OCR/通知全部异步</td></tr>
+<tr><td><b>许可边界</b></td><td>无 Power Platform 许可</td><td>审批用自有 Web 门户 + Logic Apps <code>HttpWebhook</code> 回调</td></tr>
+<tr><td><b>云环境</b></td><td>Azure Global（非 21Vianet）</td><td>已确认 <code>AzureCloud</code>，区域 East Asia</td></tr>
+<tr><td><b>代码形态</b></td><td>单仓库、双应用、可本地全量运行</td><td>本地用 SQLite + 文件系统 + 进程内队列，云端切 Azure 实现</td></tr>
+</tbody></table></div>
+
+<div class="callout">
+<div class="ct">这套 PoC 的定位</div>
+<p>它是<strong>教学载体</strong>，不是产品。判断标准不是"功能全不全"，而是<strong>每个课程模块都能在界面上找到一个可点击的落点</strong>：讲网络能点开 PE，讲身份能点开托管标识，讲成本能点开预算。所以宁可砍功能，不可砍"可观察性"。</p>
+</div>
+
+<h3>三条贯穿全局的设计原则</h3>
+<div class="grid g3">
+  <div class="card"><div class="k">Principle 01</div><div class="v" style="font-size:14px;margin-top:8px">同一份代码，两种宿主</div><div class="d">每个 Azure 依赖都有本地替身（SQLite / 文件系统 / 进程内队列）。本地跑通再上云，故障面从"云 + 代码"收敛为"代码"。</div></div>
+  <div class="card"><div class="k">Principle 02</div><div class="v" style="font-size:14px;margin-top:8px">降级优先于完美</div><div class="d">私有端点、Functions 异步、Redis 都是可降级项。演示前若某项不通，改一个 app setting 即回退，绝不现场改代码。</div></div>
+  <div class="card"><div class="k">Principle 03</div><div class="v" style="font-size:14px;margin-top:8px">基础设施即讲解材料</div><div class="d">Bicep 按课本章节分模块，部署日志本身就是教学素材：谁依赖谁、哪一步耗时最长，都能在现场展示。</div></div>
+</div>
+</section>
+
+<!-- ============ 02 ============ -->
+<section id="s2">
+<h2><span class="num">02</span>模块划分总览</h2>
+
+<p>按<strong>变化原因</strong>切分而非按技术层切分：订单规则会变、审批规则会变、归档策略会变，它们是三个不同的变化源，就该是三个模块。11 个模块分四层，依赖单向向下，不允许跨层调用。</p>
+
+<div class="layer">
+  <div class="layer-h"><span class="lb">L1</span><span class="lt">接入层 · Presentation</span><span class="ld">app-com-web-poc</span></div>
+  <div class="mods g4" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+    <div class="m"><div class="mn">UI-01</div><div class="mt">工作台</div><div class="md">订单总览、状态分布、待办角标</div></div>
+    <div class="m"><div class="mn">UI-02</div><div class="mt">订单与合同</div><div class="md">建单、明细、时间线、合同下载</div></div>
+    <div class="m"><div class="mn">UI-03</div><div class="mt">审批中心</div><div class="md">分级待办、批量审批、意见</div></div>
+    <div class="m"><div class="mn">UI-04</div><div class="mt">运维看板</div><div class="md">依赖探针、审计流、演示触发器</div></div>
+  </div>
+</div>
+<div class="arrow">↓ HTTPS / Bearer JWT</div>
+
+<div class="layer">
+  <div class="layer-h"><span class="lb">L2</span><span class="lt">业务层 · Domain</span><span class="ld">app-com-api-poc</span></div>
+  <div class="mods g4" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+    <div class="m"><div class="mn">M-01</div><div class="mt">身份与权限</div><div class="md">登录、角色、数据范围</div></div>
+    <div class="m"><div class="mn">M-02</div><div class="mt">主数据</div><div class="md">客户、产品、价目</div></div>
+    <div class="m"><div class="mn">M-03</div><div class="mt">订单</div><div class="md">建单、校验、状态机、并发</div></div>
+    <div class="m"><div class="mn">M-04</div><div class="mt">审批</div><div class="md">分档路由、决策、回调、SLA</div></div>
+    <div class="m"><div class="mn">M-05</div><div class="mt">合同归档</div><div class="md">PDF、摘要、WORM、SAS 下载</div></div>
+    <div class="m"><div class="mn">M-06</div><div class="mt">智能录入</div><div class="md">上传扫描件、字段抽取、预填</div></div>
+    <div class="m"><div class="mn">M-07</div><div class="mt">通知</div><div class="md">站内信、邮件、Webhook</div></div>
+    <div class="m"><div class="mn">M-08</div><div class="mt">审计</div><div class="md">事件流、时间线、留痕</div></div>
+  </div>
+</div>
+<div class="arrow">↓ 适配层（接口 + 本地/云端双实现）</div>
+
+<div class="layer">
+  <div class="layer-h"><span class="lb">L3</span><span class="lt">平台层 · Platform</span><span class="ld">managed identity · 零密钥</span></div>
+  <div class="mods" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+    <div class="m pf"><div class="mn">P-01</div><div class="mt">可观测</div><div class="md">App Insights、健康探针、依赖矩阵</div></div>
+    <div class="m pf"><div class="mn">P-02</div><div class="mt">治理</div><div class="md">标签、预算、Policy、RBAC</div></div>
+    <div class="m pf"><div class="mn">P-03</div><div class="mt">交付</div><div class="md">Bicep 模块、部署脚本、清理</div></div>
+    <div class="m pf"><div class="mn">P-04</div><div class="mt">工作流</div><div class="md">Functions 异步、Logic Apps 编排</div></div>
+  </div>
+</div>
+<div class="arrow">↓ 私有端点 / 托管标识</div>
+
+<div class="layer">
+  <div class="layer-h"><span class="lb">L4</span><span class="lt">数据层 · Data</span><span class="ld">全私有数据面</span></div>
+  <div class="mods" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+    <div class="m az"><div class="mn">D-01</div><div class="mt">Azure SQL</div><div class="md">结构化业务数据（唯一真相源）</div></div>
+    <div class="m az"><div class="mn">D-02</div><div class="mt">Blob Storage</div><div class="md">合同 PDF + WORM 保留策略</div></div>
+    <div class="m az"><div class="mn">D-03</div><div class="mt">Cosmos DB</div><div class="md">审计事件流（镜像，可关闭）</div></div>
+    <div class="m az"><div class="mn">D-04</div><div class="mt">Service Bus</div><div class="md">异步解耦 + 死信</div></div>
+  </div>
+</div>
+
+<div class="callout warn">
+<div class="ct">一处与架构文档的偏离，先登记</div>
+<p>架构文档把 <strong>Redis</strong> 列为缓存层。本 PoC 默认<strong>不部署</strong> Redis：East Asia 最小规格月费约 $16，而演示流量下缓存命中率讲不出故事。代码保留 <code>ICacheStore</code> 抽象（进程内实现），Bicep 保留 <code>enableRedis</code> 开关。课堂上以"缓存该放什么、什么不该放"讲设计，不用真机。</p>
+</div>
+</section>
+
+<!-- ============ 03 ============ -->
+<section id="s3">
+<h2><span class="num">03</span>模块详情与接口契约</h2>
+
+<p>接口一律 <code>/api/</code> 前缀、JSON、Bearer 鉴权。错误统一返回 <code>application/problem+json</code>（RFC 7807），带 <code>traceId</code> 便于现场用 App Insights 反查——这本身是"可观测性"模块的演示点。</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:52px">编号</th><th style="width:120px">模块</th><th>职责边界</th><th style="width:250px">关键接口</th><th style="width:130px">Azure 落点</th><th style="width:100px">课程模块</th></tr></thead>
+<tbody>
+<tr><td class="num-td">M-01</td><td><b>身份与权限</b></td><td>签发/校验 JWT；角色 <code>sales / approver1 / approver2 / finance / admin</code>；数据范围：销售只见自己创建的订单，审批人见本层级，财务/管理员见全部</td><td><code>POST /api/auth/login</code><br><code>GET /api/auth/me</code></td><td>App Service 环境变量 + Key Vault 引用<br><span class="t-sub">Easy Auth 预留未启用</span></td><td>④⑥ 安全与角色</td></tr>
+<tr><td class="num-td">M-02</td><td><b>主数据</b></td><td>客户（含信用额度）、产品（含单价与币种）；只读为主 + 管理员可增改</td><td><code>GET /api/customers</code><br><code>GET /api/products</code></td><td>Azure SQL</td><td>⑦ 常规组件</td></tr>
+<tr><td class="num-td">M-03</td><td><b>订单</b></td><td>建单（多明细）、金额校验（行小计 = 数量×单价，总额 = 行合计）、状态机、乐观并发、幂等提交</td><td><code>GET /api/orders</code><br><code>GET /api/orders/{id}</code><br><code>POST /api/orders</code><br><code>POST /api/orders/{id}/submit</code><br><code>POST /api/orders/{id}/cancel</code></td><td>Azure SQL<br><span class="t-sub">RowVersion 并发令牌</span></td><td>⑦ 常规组件</td></tr>
+<tr><td class="num-td">M-04</td><td><b>审批</b></td><td>按金额分档生成 1–3 级审批任务；逐级串行；Web 决策；回调 Logic Apps 恢复；48h 超时标记</td><td><code>GET /api/approvals/pending</code><br><code>POST /api/approvals/{taskId}/decision</code><br><code>POST /api/approvals/batch</code><br><code>GET /api/orders/{id}/approvals</code></td><td>Logic Apps<br>Service Bus</td><td>⑦ 主演示</td></tr>
+<tr><td class="num-td">M-05</td><td><b>合同归档</b></td><td>渲染 PDF、落 Blob（不可变容器）、算 SHA256、写指针到 SQL、签发短时 SAS 下载、版本迭代</td><td><code>POST /api/contracts/{orderId}/generate</code><br><code>GET /api/contracts/{orderId}</code><br><code>GET /api/contracts/{contractId}/download</code></td><td>Blob + Functions<br><span class="t-sub">WORM 保留策略</span></td><td>⑦⑧ 数据与备份</td></tr>
+<tr><td class="num-td">M-06</td><td><b>智能录入</b></td><td>上传扫描件 → 入 <code>intake</code> 容器 → 异步抽取客户/金额/条款 → 回写草稿订单</td><td><code>POST /api/intake/upload</code><br><code>GET /api/intake/{id}</code></td><td>Blob 触发器</td><td>⑦ 无服务器</td></tr>
+<tr><td class="num-td">M-07</td><td><b>通知</b></td><td>站内信（DB）+ 邮件（ACS，可关）+ 可选 Webhook；模板与重试</td><td><code>GET /api/notifications</code><br><code>POST /api/notifications/read</code></td><td>ACS Email</td><td>⑦ 集成</td></tr>
+<tr><td class="num-td">M-08</td><td><b>审计</b></td><td>所有状态变更写事件（谁、何时、从什么状态到什么状态、关联 traceId）；SQL 为真相源，Cosmos 为镜像流</td><td><code>GET /api/orders/{id}/timeline</code><br><code>GET /api/audit/recent</code></td><td>Cosmos + SQL</td><td>⑧ 运维</td></tr>
+<tr><td class="num-td">P-01</td><td><b>可观测</b></td><td>存活/就绪探针；依赖矩阵探针（SQL/Blob/SB/Cosmos 各自连通性与延迟）；自定义指标 <code>orders_submitted</code>、<code>approval_latency_ms</code></td><td><code>GET /healthz</code> <code>GET /readyz</code><br><code>GET /api/ops/deps</code></td><td>App Insights<br>Log Analytics</td><td>⑧ 监控</td></tr>
+<tr><td class="num-td">P-02</td><td><b>治理</b></td><td>统一标签 <code>app/env/owner/costCenter</code>；月度预算 $150 三档告警；拒建缺标签资源的 Policy（审计模式起步）</td><td>—（IaC 交付）</td><td>Policy / Budget</td><td>⑤⑨ 治理</td></tr>
+<tr><td class="num-td">P-03</td><td><b>交付</b></td><td>Bicep 分模块、三阶段部署、参数化开关、一键清理</td><td><code>infra/deploy.sh</code></td><td>—</td><td>⑦ 全流程</td></tr>
+<tr><td class="num-td">P-04</td><td><b>工作流</b></td><td>Functions：PDF 渲染、OCR 抽取；Logic Apps：审批编排 + <code>HttpWebhook</code> 等待</td><td>队列/Blob 触发</td><td>Functions / Logic Apps</td><td>⑦ 主演示</td></tr>
+</tbody></table></div>
+
+<h3>3.1 审批模块：三级分档 + Webhook 回调</h3>
+<p>审批是整套系统的"剧情核心"，也是唯一跨越三个 Azure 服务（API / Service Bus / Logic Apps）的链路。规则很朴素，但每一层都要能讲清"为什么放在这里"。</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:130px">订单总额（含税）</th><th style="width:90px">审批层级</th><th style="width:150px">审批角色</th><th>路由理由</th></tr></thead>
+<tbody>
+<tr><td class="num-td">&lt; ¥500,000</td><td>1 级</td><td><code>approver1</code> 销售总监</td><td>常规额度，单人可决，追求时效</td></tr>
+<tr><td class="num-td">¥500,000 – ¥2,000,000</td><td>2 级</td><td><code>approver1</code> → <code>finance</code></td><td>跨部门：业务先确认可行性，财务再确认回款风险</td></tr>
+<tr><td class="num-td">≥ ¥2,000,000</td><td>3 级</td><td><code>approver1</code> → <code>finance</code> → <code>admin</code></td><td>重大金额，逐级会签，任一级驳回即终止</td></tr>
+</tbody></table></div>
+
+<p>编排用 Logic Apps 的 <code>HttpWebhook</code> 动作，而不是轮询。这是本方案里最值得在课上展开的一段，因为它同时讲清了"<strong>PaaS 编排的持久化能力</strong>"和"<strong>服务端凭据的边界</strong>"：</p>
+
+<div class="steps">
+  <div class="step"><div class="st">API 提交订单，调 Logic Apps 触发端点</div><div class="sd">载荷只有 <code>orderId / level / amount / approverUpn</code>，不含业务数据副本，避免两份真相。</div></div>
+  <div class="step"><div class="st">工作流进入 <code>HttpWebhook</code>，向 API 的 <code>/internal/webhook/subscribe</code> 注册</div><div class="sd">Logic Apps 把本次运行的回调 URL 交给 API；API 把它写到该审批任务的记录上（生产应入 Key Vault，PoC 简化并注明）。</div></div>
+  <div class="step"><div class="st">工作流挂起等待，最长 48 小时</div><div class="sd">挂起期间<strong>不占计算资源、不计长时间运行费用</strong>——这是 Logic Apps 相对自建轮询的核心价值，也是现场最容易讲出"哦"的一点。</div></div>
+  <div class="step"><div class="st">审批人在门户点"批准"</div><div class="sd">API 落库 → 读回调 URL → POST 恢复工作流 → 工作流继续执行业务动作。</div></div>
+  <div class="step"><div class="st">还有下一级则再起一个实例，否则更新订单状态</div><div class="sd">每级一个运行实例，运行历史天然成为"审批过程可追溯"的证据链。</div></div>
+</div>
+
+<div class="callout danger">
+<div class="ct">安全要点（课上必讲）</div>
+<p>回调 URL 等价于"批准这个订单"的能力，<strong>它本身就是凭据</strong>。三条铁律：只存服务端、只由 API 调用、绝不回传浏览器。传输上加共享密钥头 + 来源校验，形成双因子。业务审批权限由应用内角色表判定，<strong>审批人不持有任何 Azure RBAC 角色</strong>——业务权限与平台权限必须解耦。</p>
+</div>
+
+<h3>3.2 合同归档：PDF 为什么不进数据库</h3>
+<p>合同 PDF 平均 200–400 KB，进 SQL 会带来三个后果：备份体积膨胀、查询缓冲池被污染、版本管理没有原生能力。所以库里只存<strong>指针 + 摘要 + 不可变截止时间</strong>，文件进 Blob 的 <code>contracts</code> 容器并施加保留策略。</p>
+
+<div class="grid g3">
+  <div class="card"><div class="k">Integrity</div><div class="v" style="font-size:14px;margin-top:8px">SHA256 摘要</div><div class="d">入库时算摘要写进 SQL。事后核对只需重算 <code>sha256</code>，一行命令证明"文件没被换过"。</div></div>
+  <div class="card"><div class="k">Immutability</div><div class="v" style="font-size:14px;margin-top:8px">WORM 保留策略</div><div class="d">容器级 time-based retention。PoC 用<strong>未锁定</strong>策略（可解除，便于清理），课堂上演示"锁定后连管理员也删不掉"。</div></div>
+  <div class="card"><div class="k">Access</div><div class="v" style="font-size:14px;margin-top:8px">短时 SAS</div><div class="d">下载走 5 分钟只读 SAS，不暴露存储密钥；容器本身关闭匿名访问。</div></div>
+</div>
+
+<h3>3.3 OCR 录入：把"不确定"显式化</h3>
+<p>现场最容易被问倒的地方是"抽取不准怎么办"。所以设计上<strong>不追求全自动建单</strong>：抽取结果一律落到草稿，逐字段带 <code>confidence</code> 与 <code>source</code>（模拟 / Document Intelligence），置信度低于 0.8 的字段在界面上高亮待人工确认。这条比"AI 准确率 99%"更能说服客户——它承认了现实。</p>
+</section>
+
+<!-- ============ 04 ============ -->
+<section id="s4">
+<h2><span class="num">04</span>数据模型与状态机</h2>
+
+<p>八张表，全部围绕订单。设计上只有两个不常见但必要的点：<code>Version</code> 做乐观并发（不用数据库触发器），<code>AuditEvent</code> 只追加不修改。</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:130px">表</th><th>关键字段</th><th style="width:230px">约束 / 索引</th><th style="width:200px">设计说明</th></tr></thead>
+<tbody>
+<tr><td><b>Customer</b></td><td>Id, Code, Name, TaxId, CreditLimit, Status</td><td>UQ(Code) · UQ(TaxId)</td><td>信用额度在提交时校验</td></tr>
+<tr><td><b>Product</b></td><td>Id, Sku, Name, UnitPrice, Currency, Active</td><td>UQ(Sku)</td><td>价格只增不改，改价即新记录</td></tr>
+<tr><td><b>Order</b></td><td>Id, OrderNo, CustomerId, Status, TotalAmount, Currency, Terms, CreatedBy, Version</td><td>UQ(OrderNo) · IX(Status, CreatedAt) · IX(CustomerId)</td><td><code>Version</code> 为并发令牌</td></tr>
+<tr><td><b>OrderLine</b></td><td>Id, OrderId, LineNo, ProductId, Qty, UnitPrice, Amount</td><td>UQ(OrderId, LineNo)</td><td>金额由应用层算，不用计算列</td></tr>
+<tr><td><b>Contract</b></td><td>Id, OrderId, Version, BlobPath, Sha256, SizeBytes, ImmutableUntil, Status</td><td>IX(OrderId) · UQ(BlobPath)</td><td>库中只存指针与摘要</td></tr>
+<tr><td><b>ApprovalTask</b></td><td>Id, OrderId, Level, ApproverUpn, Decision, DecidedAt, Comment, CallbackUrl, DueAt, WorkflowRunId</td><td>IX(OrderId, Level) · IX(ApproverUpn, Decision)</td><td><code>CallbackUrl</code> 仅服务端读取，API 不对外序列化</td></tr>
+<tr><td><b>AuditEvent</b></td><td>Id, EntityType, EntityId, Action, FromStatus, ToStatus, Actor, TraceId, Payload, CreatedAt</td><td>IX(EntityType, EntityId, CreatedAt)</td><td>只追加；Cosmos 异步镜像</td></tr>
+<tr><td><b>Notification</b></td><td>Id, UserUpn, Title, Body, Link, Read, CreatedAt</td><td>IX(UserUpn, Read)</td><td>站内信，邮件失败不影响主流程</td></tr>
+</tbody></table></div>
+
+<h3>4.1 订单状态机</h3>
+<p>状态机是防止"业务代码里到处 if"的唯一有效手段。所有变更走同一个 <code>Transition()</code> 入口，非法流转直接抛 <code>InvalidTransitionException</code>，由统一异常处理器转 409。</p>
+
+<pre><code>                 ┌──────────── cancel ────────────┐
+                 ▼                                │
+   ┌─────────┐  submit   ┌──────────────────┐  all approved  ┌──────────┐
+   │  Draft  ├──────────▶│ PendingApproval  ├───────────────▶│ Approved │
+   └─────────┘           └────────┬─────────┘                └────┬─────┘
+        ▲                         │ any rejected                  │ generate
+        │                         ▼                               ▼
+        │                    ┌──────────┐                  ┌──────────────┐
+        └──── revise ────────┤ Rejected │                  │ Contracted   │
+                             └──────────┘                  └──────┬───────┘
+                                                                  │ archive
+                                                                  ▼
+                                                           ┌────────────┐
+                                                           │  Archived  │
+                                                           └────────────┘</code></pre>
+
+<div class="tw"><table>
+<thead><tr><th style="width:150px">当前状态</th><th style="width:170px">允许动作</th><th style="width:150px">目标状态</th><th>副作用</th></tr></thead>
+<tbody>
+<tr><td><code>Draft</code></td><td>submit / cancel</td><td><code>PendingApproval</code> / <code>Cancelled</code></td><td>生成第 1 级审批任务、启动工作流、发通知</td></tr>
+<tr><td><code>PendingApproval</code></td><td>approve / reject / cancel</td><td><code>PendingApproval</code>(下一级) / <code>Rejected</code> / <code>Cancelled</code></td><td>写审计、发队列消息</td></tr>
+<tr><td><code>Approved</code></td><td>generate</td><td><code>Contracted</code></td><td>投递 PDF 任务到 Service Bus</td></tr>
+<tr><td><code>Contracted</code></td><td>archive</td><td><code>Archived</code></td><td>写 WORM、算摘要、回写指针</td></tr>
+<tr><td><code>Rejected</code></td><td>revise</td><td><code>Draft</code></td><td>新建版本、重置审批链</td></tr>
+</tbody></table></div>
+</section>
+
+<!-- ============ 05 ============ -->
+<section id="s5">
+<h2><span class="num">05</span>技术栈与选型理由</h2>
+
+<p>选型原则只有一条：<strong>课堂上看得到的部分用最直白的技术，课堂上看不到的部分用最省事的技术</strong>。所以前端不引框架（现场能直接改一行 CSS 给客户看），后端用 Minimal API（路由与处理函数在同一屏内，好讲）。</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:120px">层次</th><th style="width:230px">选型</th><th>为什么是它</th><th style="width:190px">为什么不是另一个</th></tr></thead>
+<tbody>
+<tr><td><b>语言/运行时</b></td><td>.NET 8 (LTS) · C# 12</td><td>App Service / Functions 一级支持；单一语言贯穿 API 与 Worker，代码可共享</td><td>不用 Node：PDF 中文字体渲染在 Linux 上坑更多</td></tr>
+<tr><td><b>Web 框架</b></td><td>ASP.NET Core Minimal API</td><td>端点即函数，一个文件能读完一条链路，适合投屏讲解</td><td>不用 MVC 分层：控制器+服务+DTO 会稀释重点</td></tr>
+<tr><td><b>前端</b></td><td>原生 HTML/CSS/JS（无构建）</td><td>零构建链、零 npm 依赖、现场可直接改；单文件可读</td><td>不用 React/Vue：为演示引入构建失败风险不值得</td></tr>
+<tr><td><b>ORM</b></td><td>EF Core 8（双提供程序）</td><td>同一模型可跑 SQLite（本地）与 Azure SQL（云）；<code>EnsureCreated</code> 免迁移工具链</td><td>不用 Dapper：多一层手写 SQL，本地/云端差异更大</td></tr>
+<tr><td><b>认证</b></td><td>Bearer JWT（HS256）+ 角色策略</td><td>无 Cookie → 无跨站 SameSite 问题，前后端分域部署更稳</td><td>不用 Cookie 会话：web/api 两个域名下会翻车</td></tr>
+<tr><td><b>PDF</b></td><td>QuestPDF（Community）</td><td>纯托管、Linux 原生、中文字体可控、无浏览器依赖</td><td>不用 wkhtmltopdf/Playwright：容器镜像大、字体缺失</td></tr>
+<tr><td><b>可观测</b></td><td>OpenTelemetry → App Insights</td><td>一行 <code>UseAzureMonitor</code> 接通；traceId 贯穿 API→队列→Functions</td><td>不用自建日志：客户要看的正是托管能力</td></tr>
+<tr><td><b>IaC</b></td><td>Bicep（模块化）</td><td>Azure 原生、无状态文件、<code>what-if</code> 可预览；模块对应课程章节</td><td>不用 Terraform：多一个 state 后端要解释</td></tr>
+<tr><td><b>异步</b></td><td>Service Bus + Functions</td><td>需要死信、重复检测、会话有序——队列语义比"能跑通"更重要</td><td>不用 Storage Queue：无死信子队列，讲不出重试策略</td></tr>
+</tbody></table></div>
+
+<h3>5.1 一个反直觉的实测结论</h3>
+<p>架构文档里写的是 "B1 → P0v3" 的演进路径。我把 East Asia 的实际零售价拉出来核对，发现<strong>这个路径在东亚区是错的</strong>：</p>
+
+<div class="grid g4">
+  <div class="card"><div class="k">B1 · Linux</div><div class="v">$14.6<span style="font-size:12px;color:var(--muted)">/月</span></div><div class="d">$0.02/h · 无 VNet 集成、无部署槽</div></div>
+  <div class="card accent"><div class="k">S1 · Linux</div><div class="v">$73.0<span style="font-size:12px;color:var(--muted)">/月</span></div><div class="d">$0.10/h · <b>有</b> VNet 集成 + 部署槽</div></div>
+  <div class="card"><div class="k">P0v3 · Linux</div><div class="v">$137.6<span style="font-size:12px;color:var(--muted)">/月</span></div><div class="d">$0.1885/h · 比 S1 贵近一倍</div></div>
+  <div class="card"><div class="k">SQL S0</div><div class="v">$14.5<span style="font-size:12px;color:var(--muted)">/月</span></div><div class="d">$0.4839/天 · 10 DTU</div></div>
+</div>
+
+<div class="callout">
+<div class="ct">结论</div>
+<p>本 PoC 选 <strong>S1</strong>：它是"支持 VNet 集成"这一能力线上的<strong>最低价档位</strong>，同时附带部署槽（可讲灰度）。P0v3 的溢价在东亚区买不到课堂需要的任何额外能力。<br>
+这条正好是课上"<strong>不要用'新旧'判断成本，要用价格 API 判断</strong>"的现成案例——我把它写进文档而不是藏起来。</p>
+</div>
+
+<h3>5.2 运行成本（East Asia，按 730 小时/月折算）</h3>
+<div class="tw"><table>
+<thead><tr><th style="width:230px">资源</th><th style="width:150px">规格</th><th style="width:120px">单价</th><th style="width:110px">月成本</th><th>备注</th></tr></thead>
+<tbody>
+<tr><td>App Service Plan</td><td>S1 Linux（承载 2 个应用）</td><td class="num-td">$0.10/h</td><td class="num-td">$73.0</td><td>最大单项；两应用共用一 Plan，不重复计费</td></tr>
+<tr><td>Azure SQL Database</td><td>S0 · 10 DTU</td><td class="num-td">$0.4839/天</td><td class="num-td">$14.5</td><td>Basic 可降至 $4.9，但迁移/查询明显变慢</td></tr>
+<tr><td>Service Bus</td><td>Standard</td><td class="num-td">$10.0/月</td><td class="num-td">$10.0</td><td>Topic 必需，Basic 不支持</td></tr>
+<tr><td>Private Endpoint ×4</td><td>SQL / Blob / SB / KV</td><td class="num-td">$0.01/h</td><td class="num-td">$29.2</td><td>按小时计费，与是否通流量无关</td></tr>
+<tr><td>Private DNS Zone ×4</td><td>privatelink.*</td><td class="num-td">$0.50/区</td><td class="num-td">$2.0</td><td>解析记录数极少</td></tr>
+<tr><td>Storage Account</td><td>GPv2 · LRS · Hot</td><td class="num-td">$0.0221/GB</td><td class="num-td">≈ $1.5</td><td>合同 PDF 体量小，主要是事务费</td></tr>
+<tr><td>Log Analytics + App Insights</td><td>按量（采样 30%）</td><td class="num-td">$2.30/GB</td><td class="num-td">≈ $5.0</td><td>演示期日志量小，长期跑要注意保留期</td></tr>
+<tr><td>Functions</td><td>Flex Consumption</td><td class="num-td">按执行</td><td class="num-td">&lt; $1.0</td><td>PDF/OCR 触发次数以百计</td></tr>
+<tr><td>Logic Apps</td><td>Consumption</td><td class="num-td">$0.00003/动作</td><td class="num-td">&lt; $0.5</td><td>挂起等待不计费</td></tr>
+<tr><td>Cosmos DB</td><td>Serverless</td><td class="num-td">按 RU</td><td class="num-td">≈ $1.0</td><td>审计镜像，TTL 30 天自动清</td></tr>
+<tr><td>Key Vault</td><td>Standard</td><td class="num-td">$0.03/万次</td><td class="num-td">&lt; $1.0</td><td>—</td></tr>
+<tr style="background:#141A2B"><td><b>合计</b></td><td>—</td><td>—</td><td class="num-td"><b>≈ $138 / 月</b></td><td><b>授课 3 天约 $14；讲完即删</b></td></tr>
+</tbody></table></div>
+
+<div class="callout warn">
+<div class="ct">成本控制动作（已内置）</div>
+<p>① 预算 <code>budget-com-monthly</code> 设 $150，50%/80%/100% 三档告警；② <code>infra/teardown.sh</code> 一条命令删整个资源组（WORM 策略为未锁定，可直接删）；③ 若只想"看个样子"，<code>--profile lite</code> 走 B1 + 无 PE，月成本降到约 $45。</p>
+</div>
+</section>
+
+<!-- ============ 06 ============ -->
+<section id="s6">
+<h2><span class="num">06</span>关键实现约定</h2>
+
+<p>这几条约定决定了代码是否"讲得清"和"崩得起"。</p>
+
+<h3>6.1 适配层：每个 Azure 依赖一个接口 + 两个实现</h3>
+<pre><code><span class="c-com">// 配置即开关，不写 if(env=="azure") 散落在业务代码里</span>
+builder.Services.AddSingleton&lt;IBlobStore, AzureBlobStore&gt;();   <span class="c-com">// 云端</span>
+builder.Services.AddSingleton&lt;IBlobStore, LocalBlobStore&gt;();    <span class="c-com">// 本地 ./_storage</span>
+
+<span class="c-key">interface</span> IBlobStore      { Task&lt;BlobRef&gt; PutAsync(string path, Stream s, string ct); Task&lt;Stream&gt; GetAsync(string path); Uri Sas(string path, TimeSpan ttl); }
+<span class="c-key">interface</span> IBusPublisher   { Task PublishAsync(string queueOrTopic, object payload, string? sessionId = <span class="c-key">null</span>); }
+<span class="c-key">interface</span> IAuditSink      { Task WriteAsync(AuditEvent e); }        <span class="c-com">// SQL 必写，Cosmos 可选镜像</span>
+<span class="c-key">interface</span> ICacheStore     { Task&lt;T?&gt; GetAsync&lt;T&gt;(string k); Task SetAsync&lt;T&gt;(string k, T v, TimeSpan ttl); }
+<span class="c-key">interface</span> INotifier       { Task SendAsync(string upn, string title, string body, string? link); }
+<span class="c-key">interface</span> IPdfRenderer    { byte[] Render(ContractModel m); }</code></pre>
+
+<h3>6.2 幂等：提交只做一次</h3>
+<p>提交订单会触发审批链与工作流启动，重放代价高。做法是 <code>Order.IdempotencyKey</code>（前端生成 UUID）+ 唯一索引：重复提交直接返回首次结果，不再启动第二个工作流。课上讲"为什么不该用 GET 做状态变更"时，这是现成的正例。</p>
+
+<h3>6.3 错误处理：一个入口，三种语义</h3>
+<div class="tw"><table>
+<thead><tr><th style="width:150px">异常</th><th style="width:90px">HTTP</th><th>语义</th></tr></thead>
+<tbody>
+<tr><td><code>InvalidTransitionException</code></td><td>409</td><td>状态机拒绝：并发操作或前端状态过期</td></tr>
+<tr><td><code>ValidationException</code></td><td>400</td><td>字段级错误，返回 <code>errors: {field: [msg]}</code></td></tr>
+<tr><td><code>NotFoundException</code> / 越权</td><td>404</td><td>越权一律 404 而非 403，避免探测资源是否存在</td></tr>
+</tbody></table></div>
+
+<h3>6.4 零密钥</h3>
+<p>所有 Azure 访问走 <code>DefaultAzureCredential</code>：本地是开发者登录，云端是系统分配托管标识。Blob/SB/SQL/Cosmos 全部关闭本地密钥认证（<code>sharedKeyAccess: false</code>、<code>localAuthDisabled: true</code>），SQL 用 Entra 认证 + 托管标识建库用户。这样"密钥泄露"这类风险在架构上被消除，而不是靠流程约束。</p>
+</section>
+
+<!-- ============ 07 ============ -->
+<section id="s7">
+<h2><span class="num">07</span>仓库结构与代码地图</h2>
+
+<p>单仓库、三个可部署单元（API / Functions / 静态门户同包）。目录名即职责，课上可以边讲边点开。</p>
+
+<pre><code>qirui-Azure/
+├── COM-Azure-Architecture-v1.html      <span class="c-com">架构设计（v1.1）</span>
+├── COM-System-Design-and-Deploy-Plan.html  <span class="c-com">本文档</span>
+├── com/                                 <span class="c-com">代码根</span>
+│   ├── Com.sln
+│   ├── src/
+│   │   ├── Com.Shared/                 <span class="c-com">领域模型、状态机、DTO —— API 与 Worker 共享</span>
+│   │   │   ├── Domain/Entities.cs
+│   │   │   ├── Domain/OrderStateMachine.cs
+│   │   │   ├── Domain/ApprovalRules.cs
+│   │   │   └── Contracts/*.cs           <span class="c-com">请求/响应 DTO</span>
+│   │   ├── Com.Api/                     <span class="c-com">Minimal API + 静态门户托管</span>
+│   │   │   ├── Program.cs               <span class="c-com">依赖注入、认证、异常、启动自检</span>
+│   │   │   ├── Data/ComDbContext.cs     <span class="c-com">EF Core 模型 + 双提供程序</span>
+│   │   │   ├── Data/Seeder.cs           <span class="c-com">幂等种子数据</span>
+│   │   │   ├── Endpoints/{Auth,Orders,Approvals,Contracts,Intake,MasterData,Ops,Internal}.cs
+│   │   │   ├── Services/{Blob,Bus,Cache,Notify,Pdf,Audit,Sas}*.cs
+│   │   │   └── wwwroot/                 <span class="c-com">门户（index.html / app.js / styles.css）</span>
+│   │   └── Com.Worker/                  <span class="c-com">Functions：PDF 渲染、OCR 抽取（含内联宿主模式）</span>
+│   │       ├── ContractRenderFunction.cs
+│   │       ├── IntakeOcrFunction.cs
+│   │       └── Handlers/                <span class="c-com">与宿主无关的处理逻辑，可被 API 内联调用</span>
+│   └── infra/
+│       ├── main.bicep                   <span class="c-com">编排：三阶段 + 参数开关</span>
+│       ├── modules/{network,data,web,integration,observability,governance}.bicep
+│       ├── main.parameters.json
+│       ├── deploy.sh  teardown.sh  verify.sh
+│       └── demo.http                    <span class="c-com">可直接在 VS Code 里跑的演示脚本</span>
+└── .workbuddy/memory/                   <span class="c-com">会话记忆（非交付物）</span></code></pre>
+
+<div class="callout ok">
+<div class="ct">可讲性检查</div>
+<p><code>Com.Worker/Handlers</code> 之所以独立于 Functions 宿主，是因为<strong>同一段 PDF 逻辑既能被 Service Bus 触发，也能被 API 内联调用</strong>。这既是演示的保险丝，也是一个真实的架构模式（portable worker）。</p>
+</div>
+</section>
+
+<!-- ============ 08 ============ -->
+<section id="s8">
+<h2><span class="num">08</span>部署方案</h2>
+
+<p>采用 <strong>Bicep 分模块 + 脚本编排 + 三阶段推进</strong>。不用 <code>azd</code>（需要额外安装且模板约定会遮挡细节），不用 GitHub Actions（明天上课，本地直推最快；CI 作为课后延伸讲）。</p>
+
+<h3>8.1 为什么分三阶段</h3>
+<p>一次性部署 20 个资源，失败后定位成本高。分阶段后每段都有明确的验证点，且<strong>前一段失败不会污染后一段</strong>。</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:70px">阶段</th><th style="width:200px">内容</th><th style="width:90px">耗时</th><th style="width:220px">验证动作</th><th>现场价值</th></tr></thead>
+<tbody>
+<tr><td><b>P1 基础</b></td><td>RG、VNet×2、子网、NSG、对等、私有 DNS 区、Storage、Key Vault、SQL、App Service Plan + 2 应用</td><td class="num-td">6–9 min</td><td><code>GET /healthz</code> = 200；门户能登录</td><td>网络模块的所有静态素材（IP 规划、NSG、对等）</td></tr>
+<tr><td><b>P2 集成</b></td><td>Service Bus、Private Endpoint ×4 + 私有 DNS 记录、关闭公网访问、Functions、Logic Apps、Cosmos、ACS</td><td class="num-td">8–12 min</td><td><code>GET /api/ops/deps</code> 四项全 green</td><td>PE 连接状态、私网解析、运行历史</td></tr>
+<tr><td><b>P3 治理</b></td><td>Log Analytics 告警规则、预算、Policy 分配、标签补全</td><td class="num-td">2–3 min</td><td>门户"成本管理 → 预算"可见；告警规则已启用</td><td>⑧⑨ 监控与成本治理</td></tr>
+</tbody></table></div>
+
+<div class="callout warn">
+<div class="ct">阶段划分的真正原因</div>
+<p>P2 会<strong>关闭 SQL/Blob/KV 的公网入口</strong>。这一步一旦执行，本机就再也连不上数据库——所有后续操作必须从应用内部发起（应用有 VNet 集成）。因此必须先把应用跑起来、把建表与种子数据在 P1 完成，再在 P2 收网。这个顺序本身就是课上"先连通、再收紧"的方法论。</p>
+</div>
+
+<h3>8.2 部署命令</h3>
+<pre><code><span class="c-com"># 一条命令，内部按 P1 → P2 → P3 顺序执行，每阶段失败即停</span>
+$ ./infra/deploy.sh --subscription 36985d36-64ed-4cc9-9f2e-5677afd6d35c \
+                    --location eastasia \
+                    --name com-poc \
+                    --profile full
+
+<span class="c-com"># 只部署基础设施，不发布代码（用于排障）</span>
+$ ./infra/deploy.sh --infra-only
+
+<span class="c-com"># 发布应用（zip deploy）</span>
+$ ./infra/deploy.sh --publish-only
+
+<span class="c-com"># 验证：健康检查 + 依赖矩阵 + 一条端到端业务流</span>
+$ ./infra/verify.sh
+
+<span class="c-com"># 课后清理（删整个 RG，含 WORM 未锁定策略）</span>
+$ ./infra/teardown.sh --yes</code></pre>
+
+<h3>8.3 参数与开关</h3>
+<div class="tw"><table>
+<thead><tr><th style="width:180px">参数</th><th style="width:120px">默认</th><th>作用</th></tr></thead>
+<tbody>
+<tr><td><code>profile</code></td><td><code>full</code></td><td><code>full</code>=S1+PE；<code>lite</code>=B1+公网防火墙，月成本降约 65%</td></tr>
+<tr><td><code>enablePrivateEndpoints</code></td><td><code>true</code></td><td>关掉即退回公网 + IP 白名单模式</td></tr>
+<tr><td><code>enableFunctions</code></td><td><code>true</code></td><td>关掉则 PDF 由 API 内联渲染（演示保险丝）</td></tr>
+<tr><td><code>enableLogicApps</code></td><td><code>true</code></td><td>关掉则审批用 API 内部状态机推进</td></tr>
+<tr><td><code>enableRedis</code></td><td><code>false</code></td><td>需要演示缓存时开启</td></tr>
+<tr><td><code>wormRetentionDays</code></td><td><code>30</code></td><td>未锁定策略，可解除；生产建议 3650</td></tr>
+<tr><td><code>deployerIp</code></td><td>自动探测</td><td>lite 模式下 SQL 防火墙白名单</td></tr>
+</tbody></table></div>
+
+<h3>8.4 部署后自检清单</h3>
+<ul>
+<li>门户可登录，工作台显示 3 条种子订单</li>
+<li>新建订单 → 提交 → 状态变 <code>PendingApproval</code>，审批人收到站内信</li>
+<li>切换审批人账号 → 审批中心出现待办 → 批准 → Logic Apps 运行历史出现"已完成"</li>
+<li>合同已生成：Blob 中出现 PDF，SQL 中 <code>Contract.Sha256</code> 非空，<code>ImmutableUntil</code> = 今天 + 30 天</li>
+<li><code>/api/ops/deps</code> 四项全绿；App Insights 能按 traceId 串起 API → 队列 → Functions</li>
+<li>故意吊销一个权限，验证 404 而不是 403</li>
+</ul>
+</section>
+
+<!-- ============ 09 ============ -->
+<section id="s9">
+<h2><span class="num">09</span>环境矩阵与降级策略</h2>
+
+<p>"本地能跑"不是为了开发方便，而是为了<strong>在客户现场出问题时，能在 30 秒内判断是代码问题还是云配置问题</strong>。</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:150px">能力</th><th style="width:250px">本地（开发/预演）</th><th style="width:250px">Azure（授课）</th><th>降级开关</th></tr></thead>
+<tbody>
+<tr><td>数据库</td><td>SQLite <code>com.db</code></td><td>Azure SQL S0 + PE</td><td><code>DB_PROVIDER</code></td></tr>
+<tr><td>文件存储</td><td>本地 <code>./_storage</code></td><td>Blob + WORM</td><td><code>STORAGE_MODE</code></td></tr>
+<tr><td>消息</td><td>进程内 Channel</td><td>Service Bus</td><td><code>BUS_MODE</code></td></tr>
+<tr><td>PDF 渲染</td><td>同进程</td><td>Functions 异步</td><td><code>WORKER_MODE=inline</code></td></tr>
+<tr><td>审批编排</td><td>进程内状态机</td><td>Logic Apps + Webhook</td><td><code>WORKFLOW_MODE=internal</code></td></tr>
+<tr><td>缓存</td><td>MemoryCache</td><td>（未部署）</td><td><code>enableRedis</code></td></tr>
+<tr><td>邮件</td><td>写日志 + 站内信</td><td>ACS（可选）</td><td><code>NOTIFY_MODE</code></td></tr>
+<tr><td>认证</td><td>演示账号（密码哈希）</td><td>同上；Easy Auth 预留</td><td><code>AUTH_MODE</code></td></tr>
+</tbody></table></div>
+
+<div class="callout ok">
+<div class="ct">现场兜底顺序</div>
+<p>如果 Functions 不通 → 改 <code>WORKER_MODE=inline</code>（PDF 改由 API 渲染，30 秒生效，重启应用）。<br>
+如果 Logic Apps 不通 → 改 <code>WORKFLOW_MODE=internal</code>（审批由 API 状态机推进）。<br>
+如果私有端点导致某个依赖不通 → <code>az sql server update --enable-public-network true</code> 单点放开。<br>
+三种降级都不需要重新部署代码，且降级后<strong>业务流程仍然完整</strong>——只是少了一个"云服务"的展示点，可以在课上明说这是"演示环境的取舍"。</p>
+</div>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="s10">
+<h2><span class="num">10</span>课堂演示动线</h2>
+
+<p>系统不是"讲完再看"，而是<strong>每个模块讲完后立刻回到系统上点一下</strong>。下面是把 45 分钟串起来的一条线，也可拆成 90 分钟版（每个动线加一段"如果让你改，你会改哪里"的讨论）。</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:52px">序</th><th style="width:110px">课程模块</th><th style="width:90px">时长</th><th style="width:320px">系统上的动作</th><th>要讲的那句话</th></tr></thead>
+<tbody>
+<tr><td class="num-td">1</td><td>业务背景</td><td>5m</td><td>打开工作台，指出"合同散落在邮件、审批靠微信、归档查不到"三个痛点在界面上的对应位置</td><td>先让客户看见问题，再讲方案</td></tr>
+<tr><td class="num-td">2</td><td>架构总览</td><td>5m</td><td>门户 → 资源组树状结构；对照架构图逐层点开</td><td>图上每个框，门户里都有一个真资源</td></tr>
+<tr><td class="num-td">3</td><td>网络设计</td><td>10m</td><td>子网 IP 规划 → NSG 有效规则 → PE 连接状态 = 已批准 → 在应用里 <code>/api/ops/deps</code> 看私有解析耗时</td><td>应用连数据库走的是 10.20.2.x，不是公网</td></tr>
+<tr><td class="num-td">4</td><td>安全与角色</td><td>8m</td><td>Key Vault 里只有一个"演示用"密钥；应用配置是 KV 引用；托管标识的角色分配</td><td>系统里没有一行连接字符串带密码</td></tr>
+<tr><td class="num-td">5</td><td>常规组件</td><td>12m</td><td><b>主演示</b>：建单 → 提交 → 切审批人 → 批准 → 回来看 Logic Apps 运行历史 → 下载 PDF → 展示 SHA256 与 WORM 截止时间</td><td>一条业务流穿过 App Service、Service Bus、Functions、Logic Apps、Blob、SQL 六个服务</td></tr>
+<tr><td class="num-td">6</td><td>无服务器</td><td>5m</td><td>上传一张"扫描件"，看 Blob 触发 → 字段抽取 → 草稿预填，低置信度字段高亮</td><td>异步不是性能优化，是把不确定性和主流程隔离</td></tr>
+<tr><td class="num-td">7</td><td>运维监控</td><td>5m</td><td>故意触发一次失败（关掉一个依赖），看告警与 App Insights 里的 traceId 串联</td><td>可观测性不是加日志，是能回答"这一单为什么慢"</td></tr>
+<tr><td class="num-td">8</td><td>成本治理</td><td>5m</td><td>成本分析按 <code>app</code> 标签分组 → 预算三档 → 展示 P0v3 与 S1 的价格对比截图</td><td>选型要用价格 API，不要用直觉</td></tr>
+</tbody></table></div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="s11">
+<h2><span class="num">11</span>风险与交付清单</h2>
+
+<div class="tw"><table>
+<thead><tr><th style="width:52px">编号</th><th style="width:220px">风险</th><th style="width:70px">概率</th><th style="width:70px">影响</th><th>缓解措施</th></tr></thead>
+<tbody>
+<tr><td class="num-td">R-01</td><td>私有端点导致应用连不上 SQL</td><td><span class="tag a">中</span></td><td><span class="tag r">高</span></td><td>P1 阶段先用公网跑通并建表，P2 再收网；失败可单点放开公网</td></tr>
+<tr><td class="num-td">R-02</td><td>Functions 冷启动 / 网络出站失败</td><td><span class="tag a">中</span></td><td><span class="tag a">中</span></td><td><code>WORKER_MODE=inline</code> 一键回退；PPT 里说明取舍</td></tr>
+<tr><td class="num-td">R-03</td><td>Logic Apps 工作流定义部署后无法运行</td><td><span class="tag a">中</span></td><td><span class="tag a">中</span></td><td><code>WORKFLOW_MODE=internal</code> 回退；工作流定义单独 <code>az deployment</code> 可重试</td></tr>
+<tr><td class="num-td">R-04</td><td>订阅配额不足（SQL / App Service 区域配额）</td><td><span class="tag g">低</span></td><td><span class="tag r">高</span></td><td>P1 第一步就创建 SQL 与 Plan，尽早暴露；备选 Southeast Asia</td></tr>
+<tr><td class="num-td">R-05</td><td>WORM 策略导致课后无法删除</td><td><span class="tag g">低</span></td><td><span class="tag a">中</span></td><td>使用<strong>未锁定</strong>策略，30 天保留；<code>teardown.sh</code> 内先解除策略</td></tr>
+<tr><td class="num-td">R-06</td><td>现场网络无法访问 Azure 门户</td><td><span class="tag g">低</span></td><td><span class="tag r">高</span></td><td>提前导出关键页面截图；全部演示动作保留 CLI 版本</td></tr>
+<tr><td class="num-td">R-07</td><td>成本超预期</td><td><span class="tag a">中</span></td><td><span class="tag a">中</span></td><td>预算 $150 + 三档告警；讲完立即 <code>teardown.sh</code></td></tr>
+</tbody></table></div>
+
+<h3>11.1 交付清单</h3>
+<div class="tw"><table>
+<thead><tr><th style="width:60px">状态</th><th style="width:260px">交付物</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><span class="tag g">已完成</span></td><td><code>COM-Azure-Architecture-v1.html</code></td><td>架构设计 v1.1（含 ADR、WAF、成本、模块映射）</td></tr>
+<tr><td><span class="tag g">已完成</span></td><td><code>COM-System-Design-and-Deploy-Plan.html</code></td><td>本文档</td></tr>
+<tr><td><span class="tag g">已完成</span></td><td><code>com/</code> 源码</td><td>Com.Shared + Com.Api + Com.Worker 三项目，编译 0 警告 0 错误</td></tr>
+<tr><td><span class="tag g">已完成</span></td><td><code>com/infra/</code></td><td><code>main.bicep</code> + <code>deploy.sh</code> + <code>teardown.sh</code> + <code>verify.py</code> + <code>demo.http</code></td></tr>
+<tr><td><span class="tag g">已完成</span></td><td>Azure 环境</td><td>已部署到 East Asia，端到端验收 <strong>20/20 通过</strong></td></tr>
+<tr><td><span class="tag g">已完成</span></td><td>演示账号分配</td><td>4 个账号已种子化，统一密码 <code>Com@2026</code>，支持 <code>?as=</code> 角色直达</td></tr>
+</tbody></table></div>
+
+<div class="callout">
+<div class="ct">下一步</div>
+<p>按本文档进入编码：先 <code>Com.Shared</code> 的领域模型与状态机（其余全部依赖它），再 API 端点，再门户，最后 Bicep 与部署。每完成一块先在本地用 SQLite 跑通，再上云验证。</p>
+</div>
+</section>
+
+<!-- ============ 12 ============ -->
+<section id="s12">
+<h2><span class="num">12</span>实际部署结果与踩坑记录</h2>
+
+<p>本章不是"计划"，是<strong>已经发生的事实</strong>：系统已在本机订阅上真实部署完成，端到端链路跑通。之所以单独成章，是因为下面这九个坑<strong>每一个都是课堂上可以直接讲的知识点</strong>——它们比"最佳实践清单"有说服力得多，因为我们真的踩了。</p>
+
+<h3>12.1 当前环境</h3>
+<div class="tw"><table>
+<thead><tr><th style="width:190px">项目</th><th>实际值</th></tr></thead>
+<tbody>
+<tr><td>订阅 / 资源组</td><td>Visual Studio Enterprise（<code>36985d36…</code>） / <code>rg-com-poc-eastasia</code></td></tr>
+<tr><td>区域</td><td>East Asia（香港）；<strong>Cosmos DB 例外，落在 Southeast Asia</strong>（原因见偏差 D-02）</td></tr>
+<tr><td>门户</td><td><code>https://app-com-poc-web-ilvufq.azurewebsites.net</code></td></tr>
+<tr><td>API</td><td><code>https://app-com-poc-api-ilvufq.azurewebsites.net</code></td></tr>
+<tr><td>Function</td><td><code>func-com-poc-worker-ilvufq</code>（Service Bus 触发器 ×2）</td></tr>
+<tr><td>工作流</td><td><code>la-com-poc-approval</code>（Consumption，HttpWebhook 挂起等待）</td></tr>
+<tr><td>数据与密钥</td><td><code>sql-com-poc-ilvufq</code>（S0） / <code>stcompocilvufq</code> / <code>cosmos-com-poc-ilvufq</code> / <code>kv-com-poc-ilvufq</code></td></tr>
+<tr><td>演示账号</td><td>4 个，统一密码 <code>Com@2026</code>；角色直达 <code>?as=finance@com.demo</code></td></tr>
+</tbody></table></div>
+
+<h3>12.2 端到端验收结果：20 / 20</h3>
+<pre><code>=== COM 端到端验收 @ https://app-com-poc-api-ilvufq.azurewebsites.net ===
+
+  ✔ PASS  健康检查 /healthz            {'status': 'ok', 'role': 'api'}
+  ✔ PASS  依赖探针 /api/ops/deps        6/6 正常
+      · Azure SQL / SQLite           OK      9ms  正常
+      · Blob Storage                 OK   3504ms  正常
+      · Service Bus                  OK   2320ms  正常
+      · Cosmos DB（审计镜像）          OK    975ms  正常
+      · PDF 渲染（含中文字体）            OK      0ms  正常
+      · Cache                        OK      0ms  正常
+  ✔ PASS  创建订单 POST /api/orders     201 COM-20261020-0004
+  ✔ PASS  ¥1,865,600.00 → 预期 2 级审批  2 级审批（¥500,000 – ¥2,000,000）
+  ✔ PASS  提交订单 → PendingApproval
+  ✔ PASS  L1 销售总监 收到待办
+  ✔ PASS  L1 批准 → <strong>resumed</strong>        ← 由 Logic Apps 回调推进
+  ✔ PASS  L2 财务 收到待办
+  ✔ PASS  L2 批准 → <strong>resumed</strong>
+  ✔ PASS  订单状态 = Approved
+  ✔ PASS  投递合同渲染任务 202          {'version': 1}
+  ✔ PASS  合同渲染 + 归档完成            Archived
+  ✔ PASS  PDF 大小合理（&gt;10KB）        267368 bytes
+  ✔ PASS  SHA256 已写入               2e0afe778c9a68e3449fb82a…
+  ✔ PASS  WORM 不可变截止时间已设置      2026-11-19T11:05:47Z
+  ✔ PASS  摘要重算一致                 True
+  ✔ PASS  PDF 下载（文件头 %PDF）       267368 bytes
+  ✔ PASS  跨角色访问订单详情可读（审批人视角） 200
+  ✔ PASS  未认证访问返回 401
+  ✔ PASS  内部端点无密钥被拒绝          401
+
+=== 结果：20/20 通过 ===</code></pre>
+
+<div class="callout ok">
+<div class="ct">两条审批都返回 resumed，这一点值得单独讲</div>
+<p><code>resumed</code> 意味着：提交订单时 API 触发了 Logic Apps，工作流跑完 <code>Notify</code> 后停在 <code>HttpWebhook</code> 上挂起（超时 48 小时），审批人在<strong>自有 Web 页面</strong>点"批准"，API 把决定 POST 到挂起中的回调地址，工作流才继续往下走。<strong>流程引擎在云端真的挂了两分钟，而不是被 mock 掉。</strong>如果这里返回 <code>inline</code>，说明工作流没起来、退化成 API 内部推进了——课堂上可以用这个字段一句话说清"编排用上了没有"。</p>
+</div>
+
+<h3>12.3 与设计稿的九处偏差</h3>
+<p>设计稿是意图，部署结果是事实。<strong>偏差不分对错，只有原因和代价。</strong>这几条如果客户问"能不能不这样"，答案就在最右列。</p>
+
+<div class="tw"><table>
+<thead><tr><th style="width:56px">编号</th><th style="width:250px">设计稿写法</th><th style="width:230px">实际做法</th><th>为什么改（课堂讲点）</th></tr></thead>
+<tbody>
+<tr><td class="num-td">D-01</td><td>Service Bus 也配 Private Endpoint</td><td><strong>不建 PE</strong>，改公网入口 + <code>disableLocalAuth</code> + 仅托管标识授权</td><td>Standard SKU <strong>不支持</strong> PE，会直接报 <code>PrivateEndpointInvalidSku</code>；PE 要 Premium，月费从 $10 跳到约 $677。<span class="tag a">知识点</span> PE 不是"所有 SKU 都有"的通用能力。</td></tr>
+<tr><td class="num-td">D-02</td><td>Cosmos DB 与其它资源同区域</td><td>落到 <strong>Southeast Asia</strong>，通过 <code>cosmosLocation</code> 参数控制</td><td>East Asia 返回 <code>ServiceUnavailable: high demand</code>，是<strong>区域容量</strong>而非配额问题。审计镜像对延迟不敏感，跨区约 +35ms 可接受。<span class="tag a">知识点</span> 区域容量不足是新订阅最常见的"莫名其妙失败"。</td></tr>
+<tr><td class="num-td">D-03</td><td>预算 <code>startDate</code> 固定为年初</td><td><code>utcNow('yyyy-MM-01')</code>，且必须声明成参数默认值</td><td>月度预算要求起始日<strong>不早于当月</strong>，写死历史日期报 400；而 <code>utcNow()</code> 在 Bicep 里<strong>只能出现在参数默认值位置</strong>，不能写在资源里（BCP065）。</td></tr>
+<tr><td class="num-td">D-04</td><td><code>dotnet publish</code> 默认参数</td><td>加 <code>-r linux-x64 --self-contained false</code></td><td>不指定 RID 会把 Windows/macOS 的原生库一起打包，<strong>175MB → 65MB</strong>，zip 85MB → 35MB。目标只有 App Service Linux，其余平台纯属浪费部署时间（也是 SCM 超时的诱因之一）。</td></tr>
+<tr><td class="num-td">D-05</td><td>Blob 探针用 <code>BlobServiceClient.GetPropertiesAsync()</code></td><td>改为读<strong>容器属性</strong></td><td>前者是<strong>管理面</strong>调用（<code>?restype=service&amp;comp=properties</code>），只授予 "Storage Blob Data Contributor" 的托管标识会被 403。结果是"存储明明是通的，探针却报红"。<span class="tag r">典型</span> 数据面角色 ≠ 管理面权限。</td></tr>
+<tr><td class="num-td">D-06</td><td>先上传，再 <code>SetMetadata</code> 补 sha256</td><td>先算摘要，<strong>一次</strong> <code>UploadAsync</code> 连元数据写入</td><td>WORM 容器一旦写入就不能再改，"上传后补元数据"会被不可变策略拒绝。<span class="tag a">知识点</span> 开了 WORM 之后，写入必须"一次成型"。</td></tr>
+<tr><td class="num-td">D-07</td><td>Web 应用也挂全套业务 API</td><td>Web 角色<strong>只服务</strong>静态门户 + <code>/config.json</code></td><td>同一个发布包靠 <code>APP_ROLE</code> 分角色；不加判断的话 Web 应用会对外暴露一套连着空库的 API，既浪费攻击面又容易在演示时被误访问。实测 <code>GET /api/orders</code> 在 Web 域名上返回 404。</td></tr>
+<tr><td class="num-td">D-08</td><td>把 <code>.bicep</code> 直接交给 <code>az</code> 编译</td><td>先用 bicep CLI 编成 <strong>ARM JSON</strong> 再提交</td><td><code>az</code> 调用的 <code>~/.azure/bin/bicep.exe</code> 是 <strong>0 字节</strong>文件（下载中断的常见结果），报错是 <code>[WinError 193] 不是有效的 Win32 应用程序</code>——完全看不出根因。显式编译后错误可读、还能用 azd 自带的 0.36.1。</td></tr>
+<tr><td class="num-td">D-09</td><td>Service Bus Data Owner 角色 GUID 记为 <code>…3ce6f3185d4d</code></td><td>修正为 <code>090c5cfd-751d-490a-894a-3ce6f1109419</code></td><td>部署直接报 <code>RoleDefinitionDoesNotExist</code>。<span class="tag a">教训</span> 内置角色 GUID 不要凭记忆写，先 <code>az role definition list --name "&lt;角色名&gt;"</code> 查一遍。</td></tr>
+</tbody></table></div>
+
+<h3>12.4 课堂可以直接讲的"九个坑"</h3>
+<p>如果时间只够讲一页 PPT，就讲这一页——每一条都有现场可复现的证据：</p>
+<div class="tw"><table>
+<thead><tr><th style="width:44px">#</th><th style="width:210px">现象</th><th>真相</th></tr></thead>
+<tbody>
+<tr><td class="num-td">1</td><td>建 PE 报 <code>PrivateEndpointInvalidSku</code></td><td>Service Bus 的 PE 只属于 Premium。设计阶段的"全部走 PE"要按 SKU 逐项核对。</td></tr>
+<tr><td class="num-td">2</td><td>Cosmos 建不出来，报 "high demand"</td><td>不是配额、不是权限，是<strong>区域容量</strong>。换邻近区域即可，不必开工单。</td></tr>
+<tr><td class="num-td">3</td><td>预算报 400 "start date prior to current month"</td><td>月度预算的 <code>startDate</code> 必须落在当月或之后。</td></tr>
+<tr><td class="num-td">4</td><td><code>az bicep</code> 报 <code>WinError 193</code></td><td>内置 bicep 是 0 字节文件。别去查权限，先 <code>ls -la</code> 看大小。</td></tr>
+<tr><td class="num-td">5</td><td>App Service 部署卡在 "Starting the site…" 200 秒</td><td>Linux 容器首次拉起 + 大包解压。压包（D-04）能明显缩短，必要时改用 <code>--type zip</code> 的 OneDeploy。</td></tr>
+<tr><td class="num-td">6</td><td>探针报红但服务其实是好的</td><td>探针用了管理面 API（D-05）。<strong>可观测性自己也会撒谎</strong>，探针要选对接口。</td></tr>
+<tr><td class="num-td">7</td><td>WORM 容器写入后改元数据失败</td><td>不可变策略的语义就是"不可改"。写入要么一次成型（D-06），要么另存新版本。</td></tr>
+<tr><td class="num-td">8</td><td>Key Vault 引用 <code>@Microsoft.KeyVault(...)</code> 能否跑在私有端点上</td><td>能，前提是 <code>WEBSITE_VNET_ROUTE_ALL=1</code> + <code>WEBSITE_DNS_SERVER=168.63.129.16</code> + 私有 DNS 区已链接到集成 VNet。<strong>三个条件缺一不可。</strong></td></tr>
+<tr><td class="num-td">9</td><td>角色分配报 <code>RoleDefinitionDoesNotExist</code></td><td>内置角色 GUID 记错了（D-09）。GUID 不要背，要用命令查。</td></tr>
+</tbody></table></div>
+
+<h3>12.5 部署耗时实测</h3>
+<div class="tw"><table>
+<thead><tr><th style="width:220px">阶段</th><th style="width:110px">耗时</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>基础设施（<code>--infra-only</code>）</td><td>2–5 分钟</td><td>第二次起为增量部署，比首次快一倍</td></tr>
+<tr><td>API 部署</td><td>4–10 分钟</td><td>多数时间花在 "Starting the site"，不是上传</td></tr>
+<tr><td>Web 部署</td><td>4 分钟</td><td>同上</td></tr>
+<tr><td>Function 部署</td><td>2 分钟</td><td>zip deploy 202 后异步生效</td></tr>
+<tr><td>全量（首次）</td><td>约 25 分钟</td><td>含一次失败重试；无错情况下约 15 分钟</td></tr>
+</tbody></table></div>
+
+<div class="callout warn">
+<div class="ct">现场提醒</div>
+<p>冷启动后的<strong>第一个请求</strong>可能返回 500（SQL 连接池与 EF 模型首次构建）。演示前先用 <code>verify.py</code> 或浏览器把主流程点一遍"预热"，别让第一个动作就撞在冷启动上。</p>
+</div>
+
+<h3>12.6 一键操作</h3>
+<pre><code># 全量部署（首次）
+./infra/deploy.sh --subscription &lt;sub-id&gt; --location eastasia --name com-poc --profile full
+
+# 只重建基础设施 / 只重发代码
+./infra/deploy.sh --name com-poc --infra-only
+./infra/deploy.sh --name com-poc --publish-only
+
+# 只预览变更，不落资源
+./infra/deploy.sh --name com-poc --what-if
+
+# 端到端验收（20 项）
+python infra/verify.py https://app-com-poc-api-ilvufq.azurewebsites.net
+
+# 清理（先解 WORM 策略，再删资源组，最后 purge Key Vault）
+./infra/teardown.sh --name com-poc --location eastasia --dry-run   # 先看清单
+./infra/teardown.sh --name com-poc --location eastasia --yes</code></pre>
+
+<div class="callout">
+<div class="ct">讲完就清</div>
+<p>这套环境按需运行约 <strong>$2.5–3.5 / 天</strong>（S1 计划 + SQL S0 + Service Bus Standard + Cosmos Serverless + PE ×3）。<code>teardown.sh</code> 会先解除未锁定的 WORM 策略再删资源组——如果哪一步忘了，存储账户会一直挂着按量计费。讲完当天务必执行。</p>
+</div>
+</section>
+
+<div class="foot">
+COM · 模块设计、技术栈与部署方案 v2.1（含部署结果） &nbsp;|&nbsp; 生成于 2026-10-20 &nbsp;|&nbsp; 配套：架构设计 v1.1 &nbsp;|&nbsp; 价格来源：Azure Retail Prices API（East Asia，实时查询）
+</div>
+
+</main>
+</div>
+</body>
+</html>
